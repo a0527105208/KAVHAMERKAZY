@@ -171,7 +171,43 @@
 
         <!-- Results -->
         <div id="resultsSection" class="hidden space-y-4">
+            <!-- Summary Stats Card -->
+            <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
+                <div class="bg-blue-50/80 border border-blue-100 p-4 rounded-2xl flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-600 text-xs font-bold uppercase tracking-wider">סה"כ זמן האזנה</p>
+                        <p id="totalDurationDisplay" class="text-2xl font-bold text-slate-800">0 דקות</p>
+                    </div>
+                    <div class="p-3 bg-blue-600 text-white rounded-xl shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
             <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="חיפוש חופשי (טלפון, שלוחה, שעה...)" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl text-sm">
+
+            <!-- Top Pagination Row -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div id="statsTop" class="text-[11px] text-slate-500 font-bold"></div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[11px] text-slate-500 font-bold">שורות לדף:</label>
+                        <select id="rowsPerPageSelectTop" onchange="updateRowsPerPage(this.value)" class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-bold">
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="prevPage()" class="pagination-btn-prev px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הקודם</button>
+                    <span class="pageIndicator text-xs font-bold text-slate-600"></span>
+                    <button onclick="nextPage()" class="pagination-btn-next px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הבא</button>
+                </div>
+            </div>
 
             <div class="table-container border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-sm">
                 <table id="dataTable" class="text-sm text-right">
@@ -180,12 +216,24 @@
                 </table>
             </div>
 
+            <!-- Bottom Pagination Row -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div id="stats" class="text-[11px] text-slate-500 font-bold"></div>
+                <div class="flex items-center gap-4">
+                    <div id="statsBottom" class="text-[11px] text-slate-500 font-bold"></div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[11px] text-slate-500 font-bold">שורות לדף:</label>
+                        <select id="rowsPerPageSelectBottom" onchange="updateRowsPerPage(this.value)" class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-bold">
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="500">500</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="prevPage()" id="prevBtn" class="pagination-btn px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הקודם</button>
-                    <span id="pageIndicator" class="text-xs font-bold text-slate-600"></span>
-                    <button onclick="nextPage()" id="nextBtn" class="pagination-btn px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הבא</button>
+                    <button onclick="prevPage()" class="pagination-btn-prev px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הקודם</button>
+                    <span class="pageIndicator text-xs font-bold text-slate-600"></span>
+                    <button onclick="nextPage()" class="pagination-btn-next px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הבא</button>
                 </div>
             </div>
         </div>
@@ -200,8 +248,8 @@
         const CONSTANT_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvr-tlHAmKtk54PN_K5p32rheetvG5ME2TL3WwIPNUVMktYYp2i3FlFvsa-INE0z7cfMea0-13JHkB/pub?gid=0&single=true&output=csv";
         
         let filesMap = {}; 
+        let rawDurations = []; 
 
-        // המרת שניות לפורמט HH:MM:SS
         function secondsToHHMMSS(totalSeconds) {
             const secNum = parseInt(totalSeconds, 10);
             if (isNaN(secNum)) return totalSeconds || "00:00:00";
@@ -239,8 +287,17 @@
 
         let filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1;
         let currentSort = { index: null, direction: 'asc' };
-        const rowsPerPage = 20;
+        let rowsPerPage = 20;
         const excluded = ["סוג זיהוי", "מספר זיהוי", "עברי", "נקודת התחלה", "נקודת יציאה", "יציאה זמן", "אורך הקובץ", "משך הקובץ"];
+
+        function updateRowsPerPage(val) {
+            rowsPerPage = parseInt(val);
+            // Sync both select elements
+            document.getElementById('rowsPerPageSelectTop').value = val;
+            document.getElementById('rowsPerPageSelectBottom').value = val;
+            currentPage = 1;
+            render();
+        }
 
         async function fetchFilesMap() {
             try {
@@ -304,12 +361,12 @@
             filteredHeaders = [];
             
             const shluhaIdx = originalHeaders.findIndex(h => h.includes("שלוחה"));
+            const durationIdx = originalHeaders.findIndex(h => h.includes("סה\"כ שניות") || h === "סהכ שניות");
 
             originalHeaders.forEach((h, i) => {
                 const cleanH = h.replace(/"/g, '').trim();
                 if (!excluded.includes(cleanH)) {
                     indices.push(i);
-                    // שינוי כותרת הטור כאן
                     if (cleanH.includes("סה\"כ שניות") || cleanH === "סהכ שניות") {
                         filteredHeaders.push("משך האזנה");
                     } else if (cleanH === "התחלה שעה") {
@@ -324,10 +381,13 @@
                 }
             });
 
-            filteredDataRows = originalData.map(row => {
+            filteredDataRows = originalData.map((row) => {
                 let newRow = [];
                 let rawShluha = row[shluhaIdx] || "";
                 let cleanShluhaVal = rawShluha.replace(/\//g, "").trim();
+
+                let rawSecs = parseInt(row[durationIdx]) || 0;
+                newRow._rawSeconds = rawSecs;
 
                 indices.forEach(idx => {
                     let value = (row[idx] || "").trim();
@@ -337,7 +397,6 @@
                         let cleanPath = value.startsWith('/') ? value.substring(1) : value;
                         newRow.push(cleanPath.replace(/\//g, "."));
                     } else if (headerName.includes("סה\"כ שניות") || headerName === "סהכ שניות") {
-                        // המרה של השניות לפורמט זמן
                         newRow.push(secondsToHHMMSS(value));
                     } else {
                         newRow.push(value);
@@ -354,10 +413,17 @@
             searchResults = [...filteredDataRows];
             currentSort = { index: null, direction: 'asc' };
             updateTableHeader();
+            updateSummary();
             currentPage = 1;
             render();
             document.getElementById('placeholder').classList.add('hidden');
             document.getElementById('resultsSection').classList.remove('hidden');
+        }
+
+        function updateSummary() {
+            const totalSeconds = searchResults.reduce((sum, row) => sum + (row._rawSeconds || 0), 0);
+            const totalMinutes = Math.floor(totalSeconds / 60);
+            document.getElementById('totalDurationDisplay').innerText = totalMinutes.toLocaleString() + " דקות האזנה";
         }
 
         function updateTableHeader() {
@@ -406,15 +472,26 @@
                 </tr>
             `).join('');
             const totalPages = Math.ceil(searchResults.length / rowsPerPage) || 1;
-            document.getElementById('pageIndicator').innerText = `דף ${currentPage} מתוך ${totalPages}`;
-            document.getElementById('prevBtn').disabled = currentPage === 1;
-            document.getElementById('nextBtn').disabled = currentPage === totalPages;
-            document.getElementById('stats').innerText = `נמצאו ${searchResults.length} שורות`;
+            
+            // Update all pagination indicators
+            document.querySelectorAll('.pageIndicator').forEach(el => {
+                el.innerText = `דף ${currentPage} מתוך ${totalPages}`;
+            });
+            
+            // Update all buttons
+            document.querySelectorAll('.pagination-btn-prev').forEach(btn => btn.disabled = currentPage === 1);
+            document.querySelectorAll('.pagination-btn-next').forEach(btn => btn.disabled = currentPage === totalPages);
+            
+            // Update stats
+            const statsText = `נמצאו ${searchResults.length} שורות`;
+            document.getElementById('statsTop').innerText = statsText;
+            document.getElementById('statsBottom').innerText = statsText;
         }
 
         function handleSearch() {
             const q = document.getElementById('searchInput').value.toLowerCase();
-            searchResults = filteredDataRows.filter(r => r.some(c => c.toLowerCase().includes(q)));
+            searchResults = filteredDataRows.filter(r => r.some(c => String(c).toLowerCase().includes(q)));
+            updateSummary();
             currentPage = 1;
             render();
         }
