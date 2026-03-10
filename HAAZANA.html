@@ -180,7 +180,7 @@
                         <option value="">בחר חודש</option>
                     </select>
                     <select id="daySelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
-                        <option value="">בחר יום (אופציונלי)</option>
+                        <option value="">בחר יום</option>
                     </select>
                 </div>
             </div>
@@ -197,7 +197,7 @@
                 <div class="bg-blue-50/80 border border-blue-100 p-4 rounded-2xl flex items-center justify-between">
                     <div>
                         <p class="text-blue-600 text-xs font-bold uppercase tracking-wider">סה"כ זמן האזנה</p>
-                        <p id="totalDurationDisplay" class="text-2xl font-bold text-slate-800">0 דקות</p>
+                        <p id="totalDurationDisplay" class="text-2xl font-bold text-slate-800">0 דקות האזנה בקבצים</p>
                     </div>
                     <div class="p-3 bg-blue-600 text-white rounded-xl shadow-md">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -347,7 +347,6 @@
             } catch (e) { console.error("Error loading file names map:", e); }
         }
 
-        // Logic for checking day selection
         function handleFetchClick() {
             const year = document.getElementById('yearSelect').value;
             const month = document.getElementById('monthSelect').value;
@@ -356,10 +355,8 @@
             if (!year || !month) { showError("חובה לבחור שנה וחודש לפחות."); return; }
             
             if (!day) {
-                // Day not selected - show warning modal
                 document.getElementById('confirmMonthModal').style.display = 'flex';
             } else {
-                // Day selected - proceed normally
                 fetchYMGR();
             }
         }
@@ -465,7 +462,7 @@
         function updateSummary() {
             const totalSeconds = searchResults.reduce((sum, row) => sum + (row._rawSeconds || 0), 0);
             const totalMinutes = Math.floor(totalSeconds / 60);
-            document.getElementById('totalDurationDisplay').innerText = totalMinutes.toLocaleString() + " דקות האזנה";
+            document.getElementById('totalDurationDisplay').innerText = totalMinutes.toLocaleString() + " דקות האזנה בקבצים";
         }
 
         function updateTableHeader() {
