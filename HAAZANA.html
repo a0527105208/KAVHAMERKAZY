@@ -14,7 +14,7 @@
             font-family: 'Heebo', sans-serif; 
             background-image: url('https://static.wixstatic.com/media/76027d_4530781278d1453a9f4b34036a47b7e5~mv2.jpg');
             background-size: cover; 
-            background-position: center;
+            background-position: center 10%; 
             background-attachment: fixed;
             margin: 0;
             display: flex;
@@ -83,21 +83,23 @@
             cursor: not-allowed;
         }
 
-        #errorModal {
+        /* Modal Styles */
+        .modal-overlay {
             display: none;
             position: fixed;
             inset: 0;
             background: rgba(0,0,0,0.5);
             align-items: center;
             justify-content: center;
-            z-index: 50;
+            z-index: 100;
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
 <body>
 
     <!-- Error Modal -->
-    <div id="errorModal">
+    <div id="errorModal" class="modal-overlay">
         <div class="glass p-8 rounded-3xl max-w-xs w-full text-center space-y-4">
             <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -107,6 +109,25 @@
             <h3 class="text-lg font-bold text-slate-800">שגיאה</h3>
             <p id="errorMsg" class="text-sm text-slate-600"></p>
             <button onclick="closeError()" class="w-full py-2 bg-slate-800 text-white rounded-xl font-bold text-sm">הבנתי</button>
+        </div>
+    </div>
+
+    <!-- Confirm Month Modal -->
+    <div id="confirmMonthModal" class="modal-overlay">
+        <div class="glass p-8 rounded-3xl max-w-sm w-full text-center space-y-5">
+            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <div class="space-y-2">
+                <h3 class="text-lg font-bold text-slate-800">שימו לב</h3>
+                <p class="text-sm text-slate-600">לא נבחר יום מסוים. טעינת חודש שלם עלולה לארוך זמן ממושך.</p>
+            </div>
+            <div class="flex flex-col gap-2">
+                <button onclick="proceedWithFetch()" class="w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors">אני רוצה בכל זאת חודש</button>
+                <button onclick="closeConfirmModal()" class="w-full py-3 bg-slate-100 text-slate-700 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors">לחזרה לבחירת יום בחודש</button>
+            </div>
         </div>
     </div>
 
@@ -159,12 +180,12 @@
                         <option value="">בחר חודש</option>
                     </select>
                     <select id="daySelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
-                        <option value="">בחר יום</option>
+                        <option value="">בחר יום (אופציונלי)</option>
                     </select>
                 </div>
             </div>
             
-            <button onclick="fetchYMGR()" id="fetchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+            <button onclick="handleFetchClick()" id="fetchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
                 טען נתוני האזנה
             </button>
         </div>
@@ -284,6 +305,13 @@
         }
 
         function closeError() { document.getElementById('errorModal').style.display = 'none'; }
+        
+        // Modal functions
+        function closeConfirmModal() { document.getElementById('confirmMonthModal').style.display = 'none'; }
+        function proceedWithFetch() { 
+            closeConfirmModal();
+            fetchYMGR(); 
+        }
 
         let filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1;
         let currentSort = { index: null, direction: 'asc' };
@@ -292,7 +320,6 @@
 
         function updateRowsPerPage(val) {
             rowsPerPage = parseInt(val);
-            // Sync both select elements
             document.getElementById('rowsPerPageSelectTop').value = val;
             document.getElementById('rowsPerPageSelectBottom').value = val;
             currentPage = 1;
@@ -320,6 +347,23 @@
             } catch (e) { console.error("Error loading file names map:", e); }
         }
 
+        // Logic for checking day selection
+        function handleFetchClick() {
+            const year = document.getElementById('yearSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            const day = document.getElementById('daySelect').value;
+            
+            if (!year || !month) { showError("חובה לבחור שנה וחודש לפחות."); return; }
+            
+            if (!day) {
+                // Day not selected - show warning modal
+                document.getElementById('confirmMonthModal').style.display = 'flex';
+            } else {
+                // Day selected - proceed normally
+                fetchYMGR();
+            }
+        }
+
         async function fetchYMGR() {
             const systemNum = document.getElementById('system_number').value;
             const password = document.getElementById('password').value;
@@ -327,8 +371,6 @@
             const month = document.getElementById('monthSelect').value;
             const day = document.getElementById('daySelect').value;
             
-            if (!year || !month) { showError("חובה לבחור שנה וחודש לפחות."); return; }
-
             const btn = document.getElementById('fetchBtn');
             const placeholder = document.getElementById('placeholder');
             btn.disabled = true;
@@ -473,16 +515,13 @@
             `).join('');
             const totalPages = Math.ceil(searchResults.length / rowsPerPage) || 1;
             
-            // Update all pagination indicators
             document.querySelectorAll('.pageIndicator').forEach(el => {
                 el.innerText = `דף ${currentPage} מתוך ${totalPages}`;
             });
             
-            // Update all buttons
             document.querySelectorAll('.pagination-btn-prev').forEach(btn => btn.disabled = currentPage === 1);
             document.querySelectorAll('.pagination-btn-next').forEach(btn => btn.disabled = currentPage === totalPages);
             
-            // Update stats
             const statsText = `נמצאו ${searchResults.length} שורות`;
             document.getElementById('statsTop').innerText = statsText;
             document.getElementById('statsBottom').innerText = statsText;
