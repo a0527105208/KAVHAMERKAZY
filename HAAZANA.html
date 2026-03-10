@@ -133,7 +133,7 @@
         </div>
     </div>
 
-    <!-- MAIN CONTAINER UPDATED TO max-w-7xl FOR WIDTH -->
+    <!-- Main Container -->
     <div class="glass max-w-7xl w-full rounded-[2.5rem] p-6 md:p-10 space-y-6 relative overflow-hidden">
         
         <!-- Header -->
@@ -195,24 +195,22 @@
 
         <!-- Results -->
         <div id="resultsSection" class="hidden space-y-4">
-            <!-- Summary Stats Card -->
-            <div class="grid grid-cols-1 md:grid-cols-1 gap-4">
-                <div class="bg-blue-50/80 border border-blue-100 p-4 rounded-2xl flex items-center justify-between">
-                    <div>
-                        <p class="text-blue-600 text-xs font-bold uppercase tracking-wider">סה"כ זמן האזנה</p>
-                        <p id="totalDurationDisplay" class="text-2xl font-bold text-slate-800">0 דקות האזנה בקבצים</p>
-                    </div>
-                    <div class="p-3 bg-blue-600 text-white rounded-xl shadow-md">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
+            <!-- Summary Stats -->
+            <div class="bg-blue-50/80 border border-blue-100 p-4 rounded-2xl flex items-center justify-between">
+                <div>
+                    <p class="text-blue-600 text-xs font-bold uppercase tracking-wider">סה"כ זמן האזנה</p>
+                    <p id="totalDurationDisplay" class="text-2xl font-bold text-slate-800">0 דקות האזנה בקבצים</p>
+                </div>
+                <div class="p-3 bg-blue-600 text-white rounded-xl shadow-md">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
                 </div>
             </div>
 
             <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="חיפוש חופשי (טלפון, שלוחה, שעה...)" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl text-sm">
 
-            <!-- Top Pagination Row -->
+            <!-- Pagination Top -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <div id="statsTop" class="text-[11px] text-slate-500 font-bold"></div>
@@ -240,7 +238,7 @@
                 </table>
             </div>
 
-            <!-- Bottom Pagination Row -->
+            <!-- Pagination Bottom -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <div id="statsBottom" class="text-[11px] text-slate-500 font-bold"></div>
@@ -272,20 +270,14 @@
         const CONSTANT_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvr-tlHAmKtk54PN_K5p32rheetvG5ME2TL3WwIPNUVMktYYp2i3FlFvsa-INE0z7cfMea0-13JHkB/pub?gid=0&single=true&output=csv";
         
         let filesMap = {}; 
-        let rawDurations = []; 
 
         function secondsToHHMMSS(totalSeconds) {
             const secNum = parseInt(totalSeconds, 10);
             if (isNaN(secNum)) return totalSeconds || "00:00:00";
-            
-            let hours   = Math.floor(secNum / 3600);
+            let hours = Math.floor(secNum / 3600);
             let minutes = Math.floor((secNum - (hours * 3600)) / 60);
             let seconds = secNum - (hours * 3600) - (minutes * 60);
-
-            if (hours   < 10) {hours   = "0"+hours;}
-            if (minutes < 10) {minutes = "0"+minutes;}
-            if (seconds < 10) {seconds = "0"+seconds;}
-            return hours + ':' + minutes + ':' + seconds;
+            return [hours, minutes, seconds].map(v => v < 10 ? "0" + v : v).join(":");
         }
 
         window.onload = function() {
@@ -308,12 +300,8 @@
         }
 
         function closeError() { document.getElementById('errorModal').style.display = 'none'; }
-        
         function closeConfirmModal() { document.getElementById('confirmMonthModal').style.display = 'none'; }
-        function proceedWithFetch() { 
-            closeConfirmModal();
-            fetchYMGR(); 
-        }
+        function proceedWithFetch() { closeConfirmModal(); fetchYMGR(); }
 
         let filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1;
         let currentSort = { index: null, direction: 'asc' };
@@ -341,9 +329,12 @@
                 lines.slice(1).forEach(line => {
                     const parts = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
                     if (parts.length > Math.max(msgIdx, nameIdx)) {
-                        const fileNum = (parts[msgIdx] || "").replace(/"/g, '').trim();
-                        const fileName = (parts[nameIdx] || "").replace(/"/g, '').trim();
-                        if(fileNum) filesMap[fileNum] = fileName;
+                        // Normalize key by converting to Number (strips leading zeros)
+                        const fileNumRaw = (parts[msgIdx] || "").replace(/"/g, '').trim();
+                        if(fileNumRaw) {
+                            const fileNumKey = Number(fileNumRaw).toString();
+                            filesMap[fileNumKey] = (parts[nameIdx] || "").replace(/"/g, '').trim();
+                        }
                     }
                 });
             } catch (e) { console.error("Error loading file names map:", e); }
@@ -353,14 +344,9 @@
             const year = document.getElementById('yearSelect').value;
             const month = document.getElementById('monthSelect').value;
             const day = document.getElementById('daySelect').value;
-            
             if (!year || !month) { showError("חובה לבחור שנה וחודש לפחות."); return; }
-            
-            if (!day) {
-                document.getElementById('confirmMonthModal').style.display = 'flex';
-            } else {
-                fetchYMGR();
-            }
+            if (!day) document.getElementById('confirmMonthModal').style.display = 'flex';
+            else fetchYMGR();
         }
 
         async function fetchYMGR() {
@@ -383,9 +369,8 @@
             try {
                 const response = await fetch(url);
                 const text = await response.text();
-                if (response.ok && text.includes(',')) {
-                    processCSV(text);
-                } else {
+                if (response.ok && text.includes(',')) processCSV(text);
+                else {
                     placeholder.innerText = "לא נמצאו נתונים לתאריך שנבחר במערכת.";
                     document.getElementById('resultsSection').classList.add('hidden');
                 }
@@ -408,17 +393,11 @@
                 const cleanH = h.replace(/"/g, '').trim();
                 if (!excluded.includes(cleanH)) {
                     indices.push(i);
-                    if (cleanH.includes("סה\"כ שניות") || cleanH === "סהכ שניות") {
-                        filteredHeaders.push("משך האזנה");
-                    } else if (cleanH === "התחלה שעה") {
-                        filteredHeaders.push("שעה");
-                    } else {
-                        filteredHeaders.push(cleanH);
-                    }
+                    if (cleanH.includes("סה\"כ שניות") || cleanH === "סהכ שניות") filteredHeaders.push("משך האזנה");
+                    else if (cleanH === "התחלה שעה") filteredHeaders.push("שעה");
+                    else filteredHeaders.push(cleanH);
                     
-                    if (cleanH === "קובץ" || cleanH === "השמעה") {
-                        filteredHeaders.push("תוכן");
-                    }
+                    if (cleanH === "קובץ" || cleanH === "השמעה") filteredHeaders.push("תוכן");
                 }
             });
 
@@ -444,7 +423,9 @@
                     }
 
                     if (headerName === "קובץ" || headerName === "השמעה") {
-                        let contentValue = (cleanShluhaVal === "1" || cleanShluhaVal === "7") ? (filesMap[value] || "---") : "";
+                        // FIX: Remove leading zeros from file number before mapping
+                        const normalizedFileNum = Number(value).toString();
+                        let contentValue = (cleanShluhaVal === "1" || cleanShluhaVal === "7") ? (filesMap[normalizedFileNum] || "---") : "";
                         newRow.push(contentValue);
                     }
                 });
@@ -475,26 +456,18 @@
                     icon = currentSort.direction === 'asc' ? '<span class="sort-icon">▲</span>' : '<span class="sort-icon">▼</span>';
                     activeClass = "active-sort";
                 }
-                return `<th onclick="sortTable(${i})" class="p-4 border-b border-slate-200 text-center ${activeClass}">
-                            ${icon} ${h}
-                        </th>`;
+                return `<th onclick="sortTable(${i})" class="p-4 border-b border-slate-200 text-center ${activeClass}">${icon} ${h}</th>`;
             }).join('');
             document.getElementById('tableHeader').innerHTML = headerHtml;
         }
 
         function sortTable(index) {
-            if (currentSort.index === index) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
-            } else {
-                currentSort.index = index;
-                currentSort.direction = 'asc';
-            }
+            if (currentSort.index === index) currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            else { currentSort.index = index; currentSort.direction = 'asc'; }
 
             searchResults.sort((a, b) => {
                 let valA = a[index], valB = b[index];
-                if (!isNaN(valA) && !isNaN(valB) && valA !== "" && valB !== "") {
-                    valA = parseFloat(valA); valB = parseFloat(valB);
-                }
+                if (!isNaN(valA) && !isNaN(valB) && valA !== "" && valB !== "") { valA = parseFloat(valA); valB = parseFloat(valB); }
                 if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
                 if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
                 return 0;
@@ -513,14 +486,9 @@
                 </tr>
             `).join('');
             const totalPages = Math.ceil(searchResults.length / rowsPerPage) || 1;
-            
-            document.querySelectorAll('.pageIndicator').forEach(el => {
-                el.innerText = `דף ${currentPage} מתוך ${totalPages}`;
-            });
-            
+            document.querySelectorAll('.pageIndicator').forEach(el => el.innerText = `דף ${currentPage} מתוך ${totalPages}`);
             document.querySelectorAll('.pagination-btn-prev').forEach(btn => btn.disabled = currentPage === 1);
             document.querySelectorAll('.pagination-btn-next').forEach(btn => btn.disabled = currentPage === totalPages);
-            
             const statsText = `נמצאו ${searchResults.length} שורות`;
             document.getElementById('statsTop').innerText = statsText;
             document.getElementById('statsBottom').innerText = statsText;
