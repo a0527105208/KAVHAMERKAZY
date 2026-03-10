@@ -59,6 +59,23 @@
         th {
             background: rgba(241, 245, 249, 0.95);
             white-space: nowrap;
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
+
+        th:hover {
+            background: rgba(226, 232, 240, 0.95);
+        }
+
+        .sort-icon {
+            font-size: 0.7rem;
+            margin-right: 4px;
+            color: #94a3b8;
+        }
+
+        th.active-sort {
+            color: #2563eb;
         }
 
         .pagination-btn:disabled {
@@ -66,7 +83,6 @@
             cursor: not-allowed;
         }
 
-        /* Error Modal */
         #errorModal {
             display: none;
             position: fixed;
@@ -163,7 +179,6 @@
             </div>
         </div>
 
-        <!-- Placeholder -->
         <div id="placeholder" class="py-20 text-center text-slate-500 font-medium">
             בחר תאריך ולחץ על "טען נתונים"
         </div>
@@ -171,19 +186,18 @@
     </div>
 
     <script>
-        // פונקציית עזר להמרת שניות לפורמט HH:MM:SS
         function formatSeconds(seconds) {
-            const s = parseInt(seconds) || 0;
+            const s = parseInt(seconds);
+            if (isNaN(s)) return "00:00";
             const h = Math.floor(s / 3600);
             const m = Math.floor((s % 3600) / 60);
             const sec = s % 60;
             return [h, m, sec]
                 .map(v => v < 10 ? "0" + v : v)
-                .filter((v, i) => v !== "00" || i > 0) // תמיד להשאיר דקות ושניות
+                .filter((v, i) => v !== "00" || i > 0)
                 .join(":");
         }
 
-        // Initialize date selectors
         window.onload = function() {
             const m = document.getElementById('monthSelect');
             const d = document.getElementById('daySelect');
@@ -201,6 +215,7 @@
         function closeError() { document.getElementById('errorModal').style.display = 'none'; }
 
         let filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1;
+        let currentSort = { index: null, direction: 'asc' };
         const rowsPerPage = 20;
         const excluded = ["סוג זיהוי", "מספר זיהוי", "עברי", "נקודת התחלה", "נקודת יציאה", "יציאה זמן", "אורך הקובץ", "משך הקובץ"];
 
@@ -227,6 +242,7 @@
                     processCSV(text);
                 } else {
                     placeholder.innerText = "לא נמצאו נתונים לתאריך זה.";
+                    document.getElementById('resultsSection').classList.add('hidden');
                 }
             } catch (e) {
                 placeholder.innerText = "שגיאת תקשורת.";
@@ -245,7 +261,6 @@
             originalHeaders.forEach((h, i) => {
                 if (!excluded.includes(h)) {
                     indices.push(i);
-                    // שינוי כותרות
                     let displayHeader = h;
                     if(h === "התחלה שעה") displayHeader = "שעה";
                     if(h === "סה\"כ שניות") displayHeader = "משך האזנה";
@@ -255,31 +270,75 @@
 
             filteredDataRows = originalData.map(row => {
                 return indices.map(idx => {
-                    let value = row[idx] || "";
+                    let value = (row[idx] || "").trim();
                     let headerName = originalHeaders[idx];
 
-                    // טיפול בשלוחה: שינוי / ל .
                     if (headerName === "שלוחה") {
-                        return value.replace(/\//g, ".");
+                        // ניקוי הנתיב: החלפת לוכסנים בנקודות והסרת לוכסן בתחילת המחרוזת
+                        let cleanPath = value.startsWith('/') ? value.substring(1) : value;
+                        return cleanPath.replace(/\//g, ".");
                     }
-                    
-                    // טיפול במשך: המרה ל-HH:MM:SS
-                    if (headerName === "סה\"כ שניות") {
-                        return formatSeconds(value);
-                    }
+                    if (headerName === "סה\"כ שניות") return formatSeconds(value);
 
                     return value;
                 });
             });
 
             searchResults = [...filteredDataRows];
-            
-            document.getElementById('tableHeader').innerHTML = filteredHeaders.map(h => `<th class="p-3 border-b border-slate-200 text-center">${h}</th>`).join('');
+            currentSort = { index: null, direction: 'asc' };
+            updateTableHeader();
             
             currentPage = 1;
             render();
             document.getElementById('placeholder').classList.add('hidden');
             document.getElementById('resultsSection').classList.remove('hidden');
+        }
+
+        function updateTableHeader() {
+            const headerHtml = filteredHeaders.map((h, i) => {
+                let icon = '<span class="sort-icon">⇅</span>';
+                let activeClass = "";
+                if (currentSort.index === i) {
+                    icon = currentSort.direction === 'asc' ? '<span class="sort-icon">▲</span>' : '<span class="sort-icon">▼</span>';
+                    activeClass = "active-sort";
+                }
+                return `<th onclick="sortTable(${i})" class="p-3 border-b border-slate-200 text-center ${activeClass}">
+                            ${icon} ${h}
+                        </th>`;
+            }).join('');
+            document.getElementById('tableHeader').innerHTML = headerHtml;
+        }
+
+        function sortTable(index) {
+            if (currentSort.index === index) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.index = index;
+                currentSort.direction = 'asc';
+            }
+
+            searchResults.sort((a, b) => {
+                let valA = a[index];
+                let valB = b[index];
+
+                if (valA.includes(':')) {
+                    valA = valA.split(':').reduce((acc, time) => (60 * acc) + +time, 0);
+                    valB = valB.split(':').reduce((acc, time) => (60 * acc) + +time, 0);
+                }
+
+                if (!isNaN(valA) && !isNaN(valB) && valA !== "" && valB !== "") {
+                    valA = parseFloat(valA);
+                    valB = parseFloat(valB);
+                }
+
+                if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            updateTableHeader();
+            currentPage = 1;
+            render();
         }
 
         function render() {
