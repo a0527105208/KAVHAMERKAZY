@@ -143,19 +143,25 @@
                 </div>
             </div>
             
-            <div class="grid grid-cols-3 gap-3">
-                <select id="yearSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
-                    <option value="">בחר שנה</option>
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                </select>
-                <select id="monthSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
-                    <option value="">בחר חודש</option>
-                </select>
-                <select id="daySelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
-                    <option value="">בחר יום</option>
-                </select>
+            <div class="flex flex-col gap-3">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-bold text-slate-600">בחירת תאריך</label>
+                    <button onclick="setToday()" class="text-xs text-blue-600 font-bold hover:underline">היום</button>
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <select id="yearSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
+                        <option value="">בחר שנה</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                    <select id="monthSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
+                        <option value="">בחר חודש</option>
+                    </select>
+                    <select id="daySelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
+                        <option value="">בחר יום</option>
+                    </select>
+                </div>
             </div>
             
             <button onclick="fetchYMGR()" id="fetchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
@@ -213,6 +219,17 @@
             for(let i=1; i<=12; i++) m.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
             for(let i=1; i<=31; i++) d.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
         };
+
+        function setToday() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            const day = now.getDate().toString().padStart(2, '0');
+            
+            document.getElementById('yearSelect').value = year;
+            document.getElementById('monthSelect').value = month;
+            document.getElementById('daySelect').value = day;
+        }
 
         function showError(msg) {
             document.getElementById('errorMsg').innerText = msg;
