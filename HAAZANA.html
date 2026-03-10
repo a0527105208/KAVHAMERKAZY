@@ -150,9 +150,11 @@
             <div class="flex items-center justify-between mb-4 border-b pb-4">
                 <div class="flex flex-col">
                     <h3 class="text-xl font-bold text-slate-800">סיכום האזנה לפי קבצים</h3>
-                    <p class="text-[10px] text-blue-600 font-bold">* כולל שלוחות 1 ו-7 בלבד | ממוין לפי מספר קובץ (יורד)</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    <button onclick="sortSummaryByDuration()" class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all flex items-center gap-1.5">
+                        מיין לפי משך האזנה
+                    </button>
                     <button onclick="exportSummaryData()" class="px-3 py-1.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-all flex items-center gap-1.5 shadow-sm">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                         ייצוא סיכום
@@ -166,9 +168,9 @@
                 <table class="w-full text-right text-sm">
                     <thead class="sticky top-0 bg-slate-50">
                         <tr>
-                            <th class="p-3 border-b text-center font-bold text-slate-700">קובץ ▼</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">קובץ</th>
                             <th class="p-3 border-b text-center font-bold text-slate-700">תוכן</th>
-                            <th class="p-3 border-b text-center font-bold text-slate-700">סה"כ זמן (דקות)</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">דקות האזנה</th>
                         </tr>
                     </thead>
                     <tbody id="fileSummaryBody">
@@ -457,7 +459,6 @@
                 }
             });
 
-            // יצירת מערך הנתונים וביצוע Reverse כדי שהאחרון במקור יהיה הראשון בטבלה
             filteredDataRows = originalData.map((row) => {
                 let newRow = [];
                 let rawShluha = row[shluhaIdx] || "";
@@ -491,7 +492,7 @@
                     }
                 });
                 return newRow;
-            }).reverse(); // שינוי סדר הטעינה למיון הפוך
+            }).reverse();
 
             searchResults = [...filteredDataRows];
             currentSort = { index: null, direction: 'asc' };
@@ -594,13 +595,20 @@
             });
 
             currentFileSummary = Object.values(summaryMap)
-                .sort((a, b) => b.num - a.num)
                 .map(item => ({
                     num: item.strNum,
+                    numSort: item.num,
                     content: item.content,
                     minutes: Math.floor(item.totalSecs / 60)
-                }));
+                }))
+                .filter(item => item.minutes > 0) // הוספת סינון לשורות של 0 דקות
+                .sort((a, b) => b.numSort - a.numSort); // מיון ראשוני לפי מספר קובץ יורד
             
+            renderFileSummaryTable();
+            document.getElementById('fileSummaryModal').style.display = 'flex';
+        }
+
+        function renderFileSummaryTable() {
             const html = currentFileSummary.map(item => `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
                     <td class="p-3 text-center text-slate-700 font-bold">${item.num}</td>
@@ -609,13 +617,17 @@
                 </tr>
             `).join('');
 
-            document.getElementById('fileSummaryBody').innerHTML = html || '<tr><td colspan="3" class="p-10 text-center text-slate-400">אין נתונים לשלוחות 1 ו-7</td></tr>';
-            document.getElementById('fileSummaryModal').style.display = 'flex';
+            document.getElementById('fileSummaryBody').innerHTML = html || '<tr><td colspan="3" class="p-10 text-center text-slate-400">אין נתונים רלוונטיים (האזנה מעל 0 דקות) לשלוחות 1 ו-7</td></tr>';
+        }
+
+        function sortSummaryByDuration() {
+            currentFileSummary.sort((a, b) => b.minutes - a.minutes);
+            renderFileSummaryTable();
         }
 
         function exportSummaryData() {
             if (currentFileSummary.length === 0) return;
-            const headers = ["קובץ", "תוכן", "סה\"כ דקות האזנה"];
+            const headers = ["קובץ", "תוכן", "דקות האזנה"];
             let csv = "\uFEFF" + headers.join(",") + "\n" + currentFileSummary.map(r => `${r.num},"${r.content.replace(/"/g, '""')}",${r.minutes}`).join("\n");
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
