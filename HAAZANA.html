@@ -145,12 +145,17 @@
             
             <div class="grid grid-cols-3 gap-3">
                 <select id="yearSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
+                    <option value="">בחר שנה</option>
                     <option value="2024">2024</option>
-                    <option value="2025" selected>2025</option>
+                    <option value="2025">2025</option>
                     <option value="2026">2026</option>
                 </select>
-                <select id="monthSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold"></select>
-                <select id="daySelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold"></select>
+                <select id="monthSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
+                    <option value="">בחר חודש</option>
+                </select>
+                <select id="daySelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
+                    <option value="">בחר יום</option>
+                </select>
             </div>
             
             <button onclick="fetchYMGR()" id="fetchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
@@ -201,10 +206,16 @@
         window.onload = function() {
             const m = document.getElementById('monthSelect');
             const d = document.getElementById('daySelect');
-            for(let i=1; i<=12; i++) m.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
-            for(let i=1; i<=31; i++) d.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
-            m.value = String(new Date().getMonth() + 1).padStart(2, '0');
-            d.value = String(new Date().getDate()).padStart(2, '0');
+            
+            // מילוי חודשים
+            for(let i=1; i<=12; i++) {
+                m.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
+            }
+            
+            // מילוי ימים
+            for(let i=1; i<=31; i++) {
+                d.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
+            }
         };
 
         function showError(msg) {
@@ -226,7 +237,19 @@
             const month = document.getElementById('monthSelect').value;
             const day = document.getElementById('daySelect').value;
             
-            const path = `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${year}-${month}-${day}.ymgr`;
+            if (!year || !month) {
+                showError("חובה לבחור שנה וחודש לפחות.");
+                return;
+            }
+
+            // יצירת הנתיב: אם יש יום - קובץ יומי, אם אין יום - קובץ חודשי
+            let path;
+            if (day) {
+                path = `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${year}-${month}-${day}.ymgr`;
+            } else {
+                path = `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${year}-${month}.ymgr`;
+            }
+
             const btn = document.getElementById('fetchBtn');
             const placeholder = document.getElementById('placeholder');
 
@@ -241,7 +264,7 @@
                 if (response.ok && text.includes(',')) {
                     processCSV(text);
                 } else {
-                    placeholder.innerText = "לא נמצאו נתונים לתאריך זה.";
+                    placeholder.innerText = "לא נמצאו נתונים לתאריך שנבחר.";
                     document.getElementById('resultsSection').classList.add('hidden');
                 }
             } catch (e) {
@@ -274,7 +297,6 @@
                     let headerName = originalHeaders[idx];
 
                     if (headerName === "שלוחה") {
-                        // ניקוי הנתיב: החלפת לוכסנים בנקודות והסרת לוכסן בתחילת המחרוזת
                         let cleanPath = value.startsWith('/') ? value.substring(1) : value;
                         return cleanPath.replace(/\//g, ".");
                     }
