@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול נתוני YMGR - הקו המרכזי</title>
+    <title>ניהול נתוני האזנה - הקו המרכזי</title>
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -38,6 +38,11 @@
             object-fit: cover;
             border: 3px solid white;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .profile-img:hover {
+            transform: scale(1.05);
         }
 
         .table-container {
@@ -49,7 +54,6 @@
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            table-layout: auto;
         }
 
         th {
@@ -57,23 +61,12 @@
             white-space: nowrap;
         }
 
-        tr:last-child td:first-child { border-bottom-left-radius: 1rem; }
-        tr:last-child td:last-child { border-bottom-right-radius: 1rem; }
-
         .pagination-btn:disabled {
             opacity: 0.4;
             cursor: not-allowed;
         }
 
-        select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: left 0.5rem center;
-            background-size: 1.25em;
-        }
-
-        /* Modal for errors */
+        /* Error Modal */
         #errorModal {
             display: none;
             position: fixed;
@@ -95,8 +88,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
             </div>
-            <h3 class="text-lg font-bold text-slate-800">שגיאת תאריך</h3>
-            <p id="errorMsg" class="text-sm text-slate-600">לא ניתן לבחור תאריך עתידי.</p>
+            <h3 class="text-lg font-bold text-slate-800">שגיאה</h3>
+            <p id="errorMsg" class="text-sm text-slate-600"></p>
             <button onclick="closeError()" class="w-full py-2 bg-slate-800 text-white rounded-xl font-bold text-sm">הבנתי</button>
         </div>
     </div>
@@ -106,127 +99,98 @@
         <!-- Header -->
         <div class="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-6">
             <div class="flex items-center gap-4">
-                <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" class="profile-img rounded-full bg-white">
+                <a href="index.html" title="חזרה לדף הבית">
+                    <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" class="profile-img rounded-full bg-white">
+                </a>
                 <div>
                     <h1 class="text-2xl font-bold text-slate-800 tracking-tight">נתוני האזנה בקו המרכזי</h1>
-                    <p class="text-blue-700 font-bold text-xs opacity-90">נבנה ופותח על ידי יצחק לרנר</p>
+                    <p class="text-blue-700 font-bold text-xs">נבנה ופותח על ידי יצחק לרנר</p>
                 </div>
             </div>
             
-            <div class="flex gap-2">
-                <button onclick="exportData()" class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    ייצוא לאקסל
-                </button>
-            </div>
+            <button onclick="exportData()" class="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                ייצוא לאקסל
+            </button>
         </div>
 
-        <!-- Settings & Fetch -->
+        <!-- Date Selection -->
         <div class="bg-white/40 p-5 rounded-3xl border border-white/50 space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 border-b border-white/20 pb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="space-y-1">
-                    <label class="block text-xs font-bold text-slate-600 px-1">מספר מערכת</label>
-                    <input type="text" id="system_number" value="033137787" class="w-full px-4 py-2 bg-white/80 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm">
+                    <label class="block text-xs font-bold text-slate-600">מספר מערכת</label>
+                    <input type="text" id="system_number" value="033137787" class="w-full px-4 py-2 bg-white/80 border border-slate-200 rounded-2xl outline-none text-sm">
                 </div>
                 <div class="space-y-1">
-                    <label class="block text-xs font-bold text-slate-600 px-1">סיסמה</label>
-                    <input type="password" id="password" value="8549052" class="w-full px-4 py-2 bg-white/80 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm">
+                    <label class="block text-xs font-bold text-slate-600">סיסמה</label>
+                    <input type="password" id="password" value="8549052" class="w-full px-4 py-2 bg-white/80 border border-slate-200 rounded-2xl outline-none text-sm">
                 </div>
             </div>
             
-            <div class="space-y-3">
-                <label class="block text-xs font-bold text-slate-600 px-1">בחירת תאריך</label>
-                <div class="grid grid-cols-3 gap-3">
-                    <div class="space-y-1">
-                        <label class="block text-[10px] text-slate-500 font-bold pr-1">שנה</label>
-                        <select id="yearSelect" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold">
-                            <option value="" disabled selected>בחר שנה</option>
-                            <option value="2024">2024</option>
-                            <option value="2025">2025</option>
-                            <option value="2026">2026</option>
-                        </select>
-                    </div>
-                    <div class="space-y-1">
-                        <label class="block text-[10px] text-slate-500 font-bold pr-1">חודש</label>
-                        <select id="monthSelect" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold">
-                            <option value="" disabled selected>בחר חודש</option>
-                        </select>
-                    </div>
-                    <div class="space-y-1">
-                        <label class="block text-[10px] text-slate-500 font-bold pr-1">יום</label>
-                        <select id="daySelect" class="w-full px-4 py-2 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-sm font-bold">
-                            <option value="" disabled selected>בחר יום</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <button onclick="fetchYMGR()" id="fetchBtn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 text-sm">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    טען נתוני האזנה
-                </button>
+            <div class="grid grid-cols-3 gap-3">
+                <select id="yearSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold">
+                    <option value="2024">2024</option>
+                    <option value="2025" selected>2025</option>
+                    <option value="2026">2026</option>
+                </select>
+                <select id="monthSelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold"></select>
+                <select id="daySelect" class="px-4 py-2 bg-white border border-slate-200 rounded-2xl text-sm font-bold"></select>
             </div>
+            
+            <button onclick="fetchYMGR()" id="fetchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 text-sm">
+                טען נתוני האזנה
+            </button>
         </div>
 
-        <!-- Search & Results -->
+        <!-- Results -->
         <div id="resultsSection" class="hidden space-y-4">
-            <div class="relative">
-                <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="חיפוש חופשי בטבלה..." class="w-full pl-10 pr-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none transition-all text-sm">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-            </div>
+            <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="חיפוש חופשי (טלפון, שלוחה, שעה...)" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl text-sm">
 
             <div class="table-container border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-sm">
                 <table id="dataTable" class="text-sm text-right">
-                    <thead>
-                        <tr id="tableHeader" class="text-slate-600 font-bold bg-slate-50/80"></tr>
-                    </thead>
-                    <tbody id="tableBody" class="text-slate-700 divide-y divide-slate-100"></tbody>
+                    <thead><tr id="tableHeader" class="text-slate-600 font-bold bg-slate-50/80"></tr></thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
                 </table>
             </div>
 
-            <!-- Pagination UI -->
-            <div class="flex flex-col sm:flex-row items-center justify-between gap-4 px-2">
-                <div id="stats" class="text-[11px] text-slate-500 font-bold bg-slate-100/50 px-3 py-1 rounded-full border border-slate-200">
-                    נמצאו <span id="rowCount">0</span> שורות נתונים.
-                </div>
-                <div class="flex items-center gap-3">
-                    <span id="pageIndicator" class="text-xs font-bold text-slate-600 min-w-[80px] text-center">דף 1 מתוך 1</span>
-                    <div class="flex gap-2">
-                        <button onclick="prevPage()" id="prevBtn" class="pagination-btn px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm transition-all active:scale-95">הקודם</button>
-                        <button onclick="nextPage()" id="nextBtn" class="pagination-btn px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm transition-all active:scale-95">הבא</button>
-                    </div>
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div id="stats" class="text-[11px] text-slate-500 font-bold"></div>
+                <div class="flex items-center gap-2">
+                    <button onclick="prevPage()" id="prevBtn" class="pagination-btn px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הקודם</button>
+                    <span id="pageIndicator" class="text-xs font-bold text-slate-600"></span>
+                    <button onclick="nextPage()" id="nextBtn" class="pagination-btn px-4 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 transition-all">הבא</button>
                 </div>
             </div>
         </div>
 
         <!-- Placeholder -->
-        <div id="placeholder" class="py-20 text-center space-y-4">
-            <div id="placeholderIcon" class="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto transition-all">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-            </div>
-            <p id="placeholderText" class="text-slate-500 font-medium">בחר תאריך ולחץ על "טען נתונים"</p>
+        <div id="placeholder" class="py-20 text-center text-slate-500 font-medium">
+            בחר תאריך ולחץ על "טען נתונים"
         </div>
 
     </div>
 
     <script>
-        // Initial setup for date selectors
+        // פונקציית עזר להמרת שניות לפורמט HH:MM:SS
+        function formatSeconds(seconds) {
+            const s = parseInt(seconds) || 0;
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            const sec = s % 60;
+            return [h, m, sec]
+                .map(v => v < 10 ? "0" + v : v)
+                .filter((v, i) => v !== "00" || i > 0) // תמיד להשאיר דקות ושניות
+                .join(":");
+        }
+
+        // Initialize date selectors
         window.onload = function() {
-            const monthSelect = document.getElementById('monthSelect');
-            const daySelect = document.getElementById('daySelect');
-            
-            for(let i=1; i<=12; i++) {
-                let opt = document.createElement('option');
-                opt.value = i.toString().padStart(2, '0');
-                opt.innerText = i.toString().padStart(2, '0');
-                monthSelect.appendChild(opt);
-            }
-            
-            for(let i=1; i<=31; i++) {
-                let opt = document.createElement('option');
-                opt.value = i.toString().padStart(2, '0');
-                opt.innerText = i.toString().padStart(2, '0');
-                daySelect.appendChild(opt);
-            }
+            const m = document.getElementById('monthSelect');
+            const d = document.getElementById('daySelect');
+            for(let i=1; i<=12; i++) m.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
+            for(let i=1; i<=31; i++) d.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
+            m.value = String(new Date().getMonth() + 1).padStart(2, '0');
+            d.value = String(new Date().getDate()).padStart(2, '0');
         };
 
         function showError(msg) {
@@ -234,199 +198,123 @@
             document.getElementById('errorModal').style.display = 'flex';
         }
 
-        function closeError() {
-            document.getElementById('errorModal').style.display = 'none';
-        }
+        function closeError() { document.getElementById('errorModal').style.display = 'none'; }
 
-        let currentData = [];
-        let filteredHeaders = [];
-        let filteredDataRows = [];
-        let searchResults = [];
-
-        let currentPage = 1;
+        let filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1;
         const rowsPerPage = 20;
-
-        const excludedColumns = ["סוג זיהוי", "מספר זיהוי", "עברי", "נקודת התחלה", "נקודת יציאה", "יציאה זמן", "אורך הקובץ", "משך הקובץ"];
-        
-        const headerMapping = {
-            "התחלה שעה": "שעה",
-            "סה\"כ שניות": "משך האזנה"
-        };
-
-        function cleanQuotes(str) {
-            if (!str) return "";
-            return str.replace(/^"|"$/g, '').trim();
-        }
-
-        function formatSeconds(val) {
-            if (val === undefined || val === null || val === "") return "00:00:00";
-            let numericString = val.toString().replace(/[^0-9]/g, '');
-            if (!numericString) return val;
-            const totalSeconds = parseInt(numericString, 10);
-            const h = Math.floor(totalSeconds / 3600);
-            const m = Math.floor((totalSeconds % 3600) / 60);
-            const s = totalSeconds % 60;
-            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-        }
+        const excluded = ["סוג זיהוי", "מספר זיהוי", "עברי", "נקודת התחלה", "נקודת יציאה", "יציאה זמן", "אורך הקובץ", "משך הקובץ"];
 
         async function fetchYMGR() {
             const systemNum = document.getElementById('system_number').value;
             const password = document.getElementById('password').value;
-            
             const year = document.getElementById('yearSelect').value;
             const month = document.getElementById('monthSelect').value;
             const day = document.getElementById('daySelect').value;
             
-            if (!year || !month || !day) {
-                showError("נא לבחור שנה, חודש ויום.");
-                return;
-            }
-
-            const selectedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            selectedDate.setHours(0, 0, 0, 0);
-
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            if (selectedDate > today) {
-                showError("התאריך שנבחר הוא תאריך עתידי. נא לבחור תאריך מהיום או מהעבר.");
-                return;
-            }
-            
-            const pathValue = `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${year}-${month}-${day}.ymgr`;
-            
+            const path = `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${year}-${month}-${day}.ymgr`;
             const btn = document.getElementById('fetchBtn');
-            const placeholderText = document.getElementById('placeholderText');
+            const placeholder = document.getElementById('placeholder');
 
-            document.getElementById('resultsSection').classList.add('hidden');
-            document.getElementById('placeholder').classList.remove('hidden');
-            placeholderText.innerText = `מושך נתונים...`;
             btn.disabled = true;
-
-            const url = `https://www.call2all.co.il/ym/api/RenderYMGRFile?token=${systemNum}:${password}&wath=ivr2:/${pathValue}&convertType=csv`;
+            placeholder.innerText = "טוען נתונים...";
+            
+            const url = `https://www.call2all.co.il/ym/api/RenderYMGRFile?token=${systemNum}:${password}&wath=ivr2:/${path}&convertType=csv`;
 
             try {
                 const response = await fetch(url);
                 const text = await response.text();
                 if (response.ok && text.includes(',')) {
-                    parseYMGR(text);
+                    processCSV(text);
                 } else {
-                    placeholderText.innerText = "הקובץ לא נמצא עבור התאריך המבוקש.";
+                    placeholder.innerText = "לא נמצאו נתונים לתאריך זה.";
                 }
             } catch (e) {
-                placeholderText.innerText = "שגיאת תקשורת";
+                placeholder.innerText = "שגיאת תקשורת.";
             } finally {
                 btn.disabled = false;
             }
         }
 
-        function parseYMGR(content) {
-            const rows = content.trim().split('\n').map(r => r.split(',').map(c => cleanQuotes(c)));
-            if (rows.length < 2) return;
-
+        function processCSV(text) {
+            const rows = text.trim().split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
             const originalHeaders = rows[0];
             const originalData = rows.slice(1);
-            const indicesToShow = [];
+            
+            const indices = [];
             filteredHeaders = [];
-
             originalHeaders.forEach((h, i) => {
-                if (!excludedColumns.includes(h)) {
-                    indicesToShow.push(i);
-                    filteredHeaders.push(headerMapping[h] || h);
+                if (!excluded.includes(h)) {
+                    indices.push(i);
+                    // שינוי כותרות
+                    let displayHeader = h;
+                    if(h === "התחלה שעה") displayHeader = "שעה";
+                    if(h === "סה\"כ שניות") displayHeader = "משך האזנה";
+                    filteredHeaders.push(displayHeader);
                 }
             });
 
-            const shluhaIdxInHeader = originalHeaders.indexOf("שלוחה");
+            filteredDataRows = originalData.map(row => {
+                return indices.map(idx => {
+                    let value = row[idx] || "";
+                    let headerName = originalHeaders[idx];
 
-            filteredDataRows = originalData.map(r => {
-                return indicesToShow.map(idx => {
-                    let val = r[idx];
-                    if (idx === shluhaIdxInHeader && val) {
-                        val = val.replace(/\//g, '.');
+                    // טיפול בשלוחה: שינוי / ל .
+                    if (headerName === "שלוחה") {
+                        return value.replace(/\//g, ".");
                     }
-                    return val;
+                    
+                    // טיפול במשך: המרה ל-HH:MM:SS
+                    if (headerName === "סה\"כ שניות") {
+                        return formatSeconds(value);
+                    }
+
+                    return value;
                 });
             });
 
             searchResults = [...filteredDataRows];
-            currentData = [filteredHeaders, ...filteredDataRows];
-
-            document.getElementById('tableHeader').innerHTML = filteredHeaders.map(h => `<th class="p-3 border-b border-slate-200 text-center">${h}</th>`).join('');
-
-            currentPage = 1;
-            renderCurrentPage();
             
+            document.getElementById('tableHeader').innerHTML = filteredHeaders.map(h => `<th class="p-3 border-b border-slate-200 text-center">${h}</th>`).join('');
+            
+            currentPage = 1;
+            render();
             document.getElementById('placeholder').classList.add('hidden');
             document.getElementById('resultsSection').classList.remove('hidden');
-            document.getElementById('rowCount').innerText = searchResults.length;
         }
 
-        function renderCurrentPage() {
-            const startIdx = (currentPage - 1) * rowsPerPage;
-            const endIdx = startIdx + rowsPerPage;
-            const pageData = searchResults.slice(startIdx, endIdx);
+        function render() {
+            const start = (currentPage - 1) * rowsPerPage;
+            const pageData = searchResults.slice(start, start + rowsPerPage);
             
-            renderTable(pageData);
-            updatePaginationUI();
-        }
+            document.getElementById('tableBody').innerHTML = pageData.map(row => `
+                <tr class="hover:bg-blue-50/40 transition-colors">
+                    ${row.map(cell => `<td class="p-3 border-b border-slate-100 text-center text-slate-700 font-medium">${cell}</td>`).join('')}
+                </tr>
+            `).join('');
 
-        function updatePaginationUI() {
             const totalPages = Math.ceil(searchResults.length / rowsPerPage) || 1;
             document.getElementById('pageIndicator').innerText = `דף ${currentPage} מתוך ${totalPages}`;
             document.getElementById('prevBtn').disabled = currentPage === 1;
             document.getElementById('nextBtn').disabled = currentPage === totalPages;
-        }
-
-        function prevPage() {
-            if (currentPage > 1) {
-                currentPage--;
-                renderCurrentPage();
-            }
-        }
-
-        function nextPage() {
-            const totalPages = Math.ceil(searchResults.length / rowsPerPage);
-            if (currentPage < totalPages) {
-                currentPage++;
-                renderCurrentPage();
-            }
-        }
-
-        function renderTable(data) {
-            const body = document.getElementById('tableBody');
-            const durationIdx = filteredHeaders.indexOf("משך האזנה");
-
-            body.innerHTML = data.map(row => `
-                <tr class="hover:bg-blue-50/40 transition-colors">
-                    ${row.map((cell, idx) => {
-                        let display = cell;
-                        if (idx === durationIdx) display = formatSeconds(cell);
-                        return `<td class="p-3 border-b border-slate-100 text-center">${display}</td>`;
-                    }).join('')}
-                </tr>
-            `).join('');
+            document.getElementById('stats').innerText = `נמצאו ${searchResults.length} שורות`;
         }
 
         function handleSearch() {
             const q = document.getElementById('searchInput').value.toLowerCase();
-            searchResults = filteredDataRows.filter(r => r.some(c => c.toString().toLowerCase().includes(q)));
+            searchResults = filteredDataRows.filter(r => r.some(c => c.toLowerCase().includes(q)));
             currentPage = 1;
-            renderCurrentPage();
-            document.getElementById('rowCount').innerText = searchResults.length;
+            render();
         }
 
+        function prevPage() { if(currentPage > 1) { currentPage--; render(); } }
+        function nextPage() { if(currentPage < Math.ceil(searchResults.length / rowsPerPage)) { currentPage++; render(); } }
+
         function exportData() {
-            if (currentData.length === 0) return;
-            const durationIdx = filteredHeaders.indexOf("משך האזנה");
-            let csv = "\uFEFF";
-            const rows = currentData.map((r, ri) => {
-                if (ri === 0) return r.join(",");
-                return r.map((c, ci) => (ci === durationIdx ? formatSeconds(c) : c)).join(",");
-            });
-            const blob = new Blob([csv + rows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+            let csv = "\uFEFF" + filteredHeaders.join(",") + "\n" + searchResults.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "ymgr_report.csv";
+            link.download = "listening_report.csv";
             link.click();
         }
     </script>
