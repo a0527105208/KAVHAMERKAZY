@@ -457,6 +457,7 @@
                 }
             });
 
+            // יצירת מערך הנתונים וביצוע Reverse כדי שהאחרון במקור יהיה הראשון בטבלה
             filteredDataRows = originalData.map((row) => {
                 let newRow = [];
                 let rawShluha = row[shluhaIdx] || "";
@@ -490,7 +491,7 @@
                     }
                 });
                 return newRow;
-            });
+            }).reverse(); // שינוי סדר הטעינה למיון הפוך
 
             searchResults = [...filteredDataRows];
             currentSort = { index: null, direction: 'asc' };
@@ -592,7 +593,6 @@
                 }
             });
 
-            // מיון לפי מספר קובץ מהגדול לקטן
             currentFileSummary = Object.values(summaryMap)
                 .sort((a, b) => b.num - a.num)
                 .map(item => ({
