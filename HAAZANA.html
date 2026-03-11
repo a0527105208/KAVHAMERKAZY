@@ -568,6 +568,26 @@
             link.download = "listening_report.csv";
             link.click();
         }
+
+        function exportSummaryData() {
+            const headers = ["קובץ", "שדרן", "תוכן", "דקות האזנה"];
+            let csv = "\uFEFF" + headers.join(",") + "\n" + displayedSummary.map(i => [i.num, i.announcer, i.content, i.minutes].join(",")).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "file_summary_report.csv";
+            link.click();
+        }
+
+        function exportAnnouncerSummaryData() {
+            const headers = ["שדרן", "דקות האזנה"];
+            let csv = "\uFEFF" + headers.join(",") + "\n" + displayedAnnouncerSummary.map(i => [i.name, i.minutes].join(",")).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "announcer_summary_report.csv";
+            link.click();
+        }
     </script>
 </body>
 </html>
