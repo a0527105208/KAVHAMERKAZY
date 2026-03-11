@@ -289,7 +289,6 @@
             const d = document.getElementById('daySelect');
             for(let i=1; i<=12; i++) m.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
             for(let i=1; i<=31; i++) d.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
-            // הסרת הקריאה ל-setToday כדי לשמור על ברירת המחדל הריקה שביקשת
         };
 
         function setToday() {
@@ -457,7 +456,15 @@
                     map[f].secs += r._rawSeconds;
                 }
             });
-            currentFileSummary = Object.values(map).map(i => ({ num: i.num, announcer: i.announcer, content: i.content, minutes: Math.floor(i.secs/60) })).filter(i => i.minutes > 0).sort((a,b) => b.minutes - a.minutes);
+            // ברירת מחדל: מיון לפי מספר קובץ מהגדול לקטן
+            currentFileSummary = Object.values(map).map(i => ({ 
+                num: i.num, 
+                numVal: parseInt(i.num) || 0,
+                announcer: i.announcer, 
+                content: i.content, 
+                minutes: Math.floor(i.secs/60) 
+            })).filter(i => i.minutes > 0).sort((a,b) => b.numVal - a.numVal);
+            
             displayedSummary = [...currentFileSummary];
             renderFileSummary();
             document.getElementById('fileSummaryModal').style.display = 'flex';
@@ -476,7 +483,12 @@
                     map[a].secs += r._rawSeconds;
                 }
             });
-            currentAnnouncerSummary = Object.values(map).map(i => ({ name: i.name, minutes: Math.floor(i.secs/60) })).filter(i => i.minutes > 0).sort((a,b) => b.minutes - a.minutes);
+            // ברירת מחדל: מיון לפי שם שדרן מא' עד ת'
+            currentAnnouncerSummary = Object.values(map).map(i => ({ 
+                name: i.name, 
+                minutes: Math.floor(i.secs/60) 
+            })).filter(i => i.minutes > 0).sort((a,b) => a.name.localeCompare(b.name, 'he'));
+            
             displayedAnnouncerSummary = [...currentAnnouncerSummary];
             renderAnnouncerSummary();
             document.getElementById('announcerSummaryModal').style.display = 'flex';
