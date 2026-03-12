@@ -189,6 +189,34 @@
         </div>
     </div>
 
+    <!-- Extension Summary Modal -->
+    <div id="extensionSummaryModal" class="modal-overlay">
+        <div class="glass p-6 rounded-3xl max-w-2xl w-full mx-4 flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between mb-4 border-b pb-4">
+                <h3 class="text-xl font-bold text-slate-800">סיכום האזנה לפי שלוחה</h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="sortExtensionSummaryByDuration()" class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all">מיין לפי האזנה</button>
+                    <button onclick="exportExtensionSummaryData()" class="px-3 py-1.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-all">ייצוא</button>
+                    <button onclick="closeExtensionSummary()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+            <input type="text" id="extensionSearchInput" onkeyup="handleExtensionSummarySearch()" placeholder="חיפוש בסיכום שלוחות..." class="mb-4 w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20">
+            <div class="overflow-y-auto flex-grow custom-scrollbar">
+                <table class="w-full text-right text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">שלוחה</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">דקות האזנה</th>
+                        </tr>
+                    </thead>
+                    <tbody id="extensionSummaryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Container -->
     <div class="glass w-full max-w-[98%] xl:max-w-[1500px] rounded-[2rem] p-4 md:p-8 space-y-6 relative overflow-hidden">
         
@@ -275,6 +303,12 @@
                         </svg>
                         סיכום לפי שדרן
                     </button>
+                    <button onclick="openExtensionSummary()" class="flex-1 px-4 py-2 bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-800 shadow-sm flex items-center justify-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                        </svg>
+                        סיכום לפי שלוחה
+                    </button>
                 </div>
             </div>
 
@@ -327,7 +361,7 @@
     <script>
         const CONSTANT_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvr-tlHAmKtk54PN_K5p32rheetvG5ME2TL3WwIPNUVMktYYp2i3FlFvsa-INE0z7cfMea0-13JHkB/pub?gid=0&single=true&output=csv";
         let filesMap = {}, filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1, currentSort = { index: null, direction: 'asc' }, rowsPerPage = 20;
-        let currentFileSummary = [], displayedSummary = [], currentAnnouncerSummary = [], displayedAnnouncerSummary = [];
+        let currentFileSummary = [], displayedSummary = [], currentAnnouncerSummary = [], displayedAnnouncerSummary = [], currentExtensionSummary = [], displayedExtensionSummary = [];
         let columnFilters = {}; // For advanced search
         const excluded = ["סוג זיהוי", "מספר זיהוי", "עברי", "נקודת התחלה", "נקודת יציאה", "יציאה זמן", "אורך הקובץ", "משך הקובץ"];
 
@@ -447,6 +481,7 @@
                 newRow._rawSeconds = rawSecs;
                 newRow._cleanShluha = (row[shIdx] || "").replace(/\//g, "").trim();
                 newRow._rawFileNum = Number(row[fileIdx] || "").toString();
+                newRow._originalShluha = (row[shIdx] || "").trim();
 
                 indices.forEach(idx => {
                     let val = (row[idx] || "").trim(), h = originalHeaders[idx].replace(/"/g, '').trim();
@@ -600,8 +635,30 @@
             document.getElementById('announcerSummaryBody').innerHTML = displayedAnnouncerSummary.map(i => `<tr class="border-b"><td class="p-3 text-center font-bold">${i.name}</td><td class="p-3 text-center font-bold text-indigo-700">${i.minutes}</td></tr>`).join('');
         }
 
+        function openExtensionSummary() {
+            const map = {};
+            searchResults.forEach(r => {
+                const ext = r._originalShluha || "---";
+                if(!map[ext]) map[ext] = { name: ext, secs: 0 };
+                map[ext].secs += r._rawSeconds;
+            });
+            currentExtensionSummary = Object.values(map).map(i => ({ 
+                name: i.name, 
+                minutes: Math.floor(i.secs/60) 
+            })).filter(i => i.minutes > 0).sort((a,b) => a.name.localeCompare(b.name, 'he'));
+            
+            displayedExtensionSummary = [...currentExtensionSummary];
+            renderExtensionSummary();
+            document.getElementById('extensionSummaryModal').style.display = 'flex';
+        }
+
+        function renderExtensionSummary() {
+            document.getElementById('extensionSummaryBody').innerHTML = displayedExtensionSummary.map(i => `<tr class="border-b"><td class="p-3 text-center font-bold">${i.name}</td><td class="p-3 text-center font-bold text-slate-700">${i.minutes}</td></tr>`).join('');
+        }
+
         function closeFileSummary() { document.getElementById('fileSummaryModal').style.display = 'none'; }
         function closeAnnouncerSummary() { document.getElementById('announcerSummaryModal').style.display = 'none'; }
+        function closeExtensionSummary() { document.getElementById('extensionSummaryModal').style.display = 'none'; }
         function proceedWithFetch() { document.getElementById('confirmMonthModal').style.display = 'none'; fetchYMGR(); }
         function closeConfirmModal() { document.getElementById('confirmMonthModal').style.display = 'none'; }
         
@@ -617,8 +674,15 @@
             renderAnnouncerSummary();
         }
 
+        function handleExtensionSummarySearch() {
+            const q = document.getElementById('extensionSearchInput').value.toLowerCase();
+            displayedExtensionSummary = currentExtensionSummary.filter(i => i.name.toLowerCase().includes(q));
+            renderExtensionSummary();
+        }
+
         function sortSummaryByDuration() { displayedSummary.sort((a,b) => b.minutes - a.minutes); renderFileSummary(); }
         function sortAnnouncerSummaryByDuration() { displayedAnnouncerSummary.sort((a,b) => b.minutes - a.minutes); renderAnnouncerSummary(); }
+        function sortExtensionSummaryByDuration() { displayedExtensionSummary.sort((a,b) => b.minutes - a.minutes); renderExtensionSummary(); }
 
         function exportData() {
             let csv = "\uFEFF" + filteredHeaders.join(",") + "\n" + searchResults.map(r => r.join(",")).join("\n");
@@ -646,6 +710,16 @@
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = "announcer_summary_report.csv";
+            link.click();
+        }
+
+        function exportExtensionSummaryData() {
+            const headers = ["שלוחה", "דקות האזנה"];
+            let csv = "\uFEFF" + headers.join(",") + "\n" + displayedExtensionSummary.map(i => [i.name, i.minutes].join(",")).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "extension_summary_report.csv";
             link.click();
         }
     </script>
