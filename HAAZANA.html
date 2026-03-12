@@ -92,7 +92,7 @@
             to { transform: rotate(360deg); }
         }
         .spinner {
-            animation: spin 1s linear infinite;
+            animation: spin 2s linear infinite; /* Slowed down to half speed */
         }
     </style>
 </head>
@@ -208,6 +208,7 @@
                     <thead class="sticky top-0 bg-slate-50">
                         <tr>
                             <th class="p-3 border-b text-center font-bold text-slate-700">שלוחה</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">שם השלוחה</th>
                             <th class="p-3 border-b text-center font-bold text-slate-700">דקות האזנה</th>
                         </tr>
                     </thead>
@@ -302,7 +303,7 @@
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p class="text-blue-700 font-bold text-lg animate-pulse">טוען נתונים, אנא המתן...</p>
+            <p id="loaderText" class="text-blue-700 font-bold text-lg animate-pulse text-center max-w-md">טוען נתונים ושמות שלוחות, אנא המתן...</p>
         </div>
 
         <!-- Results -->
@@ -393,6 +394,7 @@
         let filesMap = {}, filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1, currentSort = { index: null, direction: 'asc' }, rowsPerPage = 20;
         let currentFileSummary = [], displayedSummary = [], currentAnnouncerSummary = [], displayedAnnouncerSummary = [], currentExtensionSummary = [], displayedExtensionSummary = [], currentPhoneSummary = [], displayedPhoneSummary = [];
         let columnFilters = {}; 
+        let ivrTitlesCache = {}; 
         const excluded = ["סוג זיהוי", "מספר זיהוי", "עברי", "נקודת התחלה", "נקודת יציאה", "יציאה זמן", "אורך הקובץ", "משך הקובץ"];
 
         window.onload = function() {
@@ -407,6 +409,39 @@
             document.getElementById('yearSelect').value = now.getFullYear();
             document.getElementById('monthSelect').value = (now.getMonth() + 1).toString().padStart(2, '0');
             document.getElementById('daySelect').value = now.getDate().toString().padStart(2, '0');
+        }
+
+        async function getIvrTitle(ext) {
+            if (!ext) return "";
+            const internalExt = ext.replace(/\./g, "/");
+            if (ivrTitlesCache[internalExt]) return ivrTitlesCache[internalExt];
+
+            const sys = document.getElementById('system_number').value;
+            const pass = document.getElementById('password').value;
+            const token = `${sys}:${pass}`;
+            const url = `https://www.call2all.co.il/ym/api/GetTextFile?token=${token}&what=ivr2:/${internalExt}/ext.ini`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: { 'Accept': 'text/plain' }
+                });
+                if (!response.ok) throw new Error("Error");
+                const text = await response.text();
+                const match = text.match(/title=([^a-zA-Z\n]+)/);
+                if (match && match[1]) {
+                    const title = match[1].replace(/\\/g, "").trim();
+                    ivrTitlesCache[internalExt] = title;
+                    return title;
+                } else {
+                    ivrTitlesCache[internalExt] = ""; 
+                    return "";
+                }
+            } catch (err) {
+                console.error("Error fetching title:", err);
+                return "";
+            }
         }
 
         async function fetchFilesMap() {
@@ -435,7 +470,7 @@
             const month = document.getElementById('monthSelect').value;
             const day = document.getElementById('daySelect').value;
             if (!year || !month) { showErrorModal("יש לבחור שנה וחודש לפחות."); return; }
-            if (!day) document.getElementById('confirmMonthModal').style.display = 'flex';
+            if (!day || day === "כל החודש" || day === "") document.getElementById('confirmMonthModal').style.display = 'flex';
             else fetchYMGR();
         }
 
@@ -451,20 +486,70 @@
             const y = document.getElementById('yearSelect').value, m = document.getElementById('monthSelect').value, d = document.getElementById('daySelect').value;
             const btn = document.getElementById('fetchBtn'), ph = document.getElementById('placeholder');
             const gLoader = document.getElementById('globalLoader'), resultsSection = document.getElementById('resultsSection');
+            const loaderText = document.getElementById('loaderText');
+            
+            const isFullMonth = (!d || d === "כל החודש" || d === "");
+            const intervalSpeed = isFullMonth ? 5000 : 2500;
+
+            const standardMessages = [
+                "טוען נתונים ושמות שלוחות, אנא המתן...",
+                "מעבד נתונים משרתי ימות המשיח...",
+                "מבצע סיכומי השמעה ותוכן...",
+                "מתרגם מספרי שלוחות לשמות...",
+                "מארגן את התצוגה עבורך...",
+                "כמעט מסתיים, עוד רגע קט..."
+            ];
+
+            const heavyMessages = [
+                "שים לב: טעינת חודש היא פעולה כבדה, המערכת מעבדת אלפי רשומות...",
+                "מעבד נתונים מסיביים משרתי ימות המשיח, אנא המתן בסבלנות...",
+                "מבצע הצלבת נתונים מול רשימת התכנים המלאה...",
+                "מתרגם את שמות השלוחות - פעולה זו דורשת זמן נוסף בטעינה חודשית...",
+                "מכין את טבלאות הסיכום עבור חודש שלם...",
+                "מחשב סה\"כ דקות האזנה לכל שדרן ושלוחה...",
+                "כמעט שם! מארגן את הנתונים לצפייה נוחה...",
+                "אל תסגור את הדף, אנחנו בשלבי סיום של עיבוד החודש..."
+            ];
+
+            const loadingMessages = isFullMonth ? heavyMessages : standardMessages;
+
+            let messageIndex = 0;
+            loaderText.innerText = loadingMessages[0];
+            
+            const loadingInterval = setInterval(() => {
+                messageIndex++;
+                if (messageIndex < loadingMessages.length) {
+                    loaderText.innerText = loadingMessages[messageIndex];
+                } else {
+                    messageIndex = 0;
+                    loaderText.innerText = loadingMessages[0];
+                }
+            }, intervalSpeed);
+
             btn.disabled = true; ph.classList.add('hidden'); resultsSection.classList.add('hidden'); gLoader.classList.remove('hidden');
+            
+            ivrTitlesCache = {}; 
             await fetchFilesMap();
-            let path = d ? `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}-${d}.ymgr` : `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}.ymgr`;
+            
+            let path = (!isFullMonth) ? `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}-${d}.ymgr` : `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}.ymgr`;
             const url = `https://www.call2all.co.il/ym/api/RenderYMGRFile?token=${sys}:${pass}&wath=ivr2:/${path}&convertType=csv`;
             try {
                 const res = await fetch(url);
                 const txt = await res.text();
-                if (res.ok && txt.includes(',')) { processCSV(txt); resultsSection.classList.remove('hidden'); } 
+                if (res.ok && txt.includes(',')) { 
+                    await processCSV(txt); 
+                    resultsSection.classList.remove('hidden'); 
+                } 
                 else { ph.innerText = "לא נמצאו נתונים לתאריך שנבחר."; ph.classList.remove('hidden'); }
             } catch (e) { ph.innerText = "שגיאת תקשורת בטעינת הנתונים."; ph.classList.remove('hidden'); } 
-            finally { btn.disabled = false; gLoader.classList.add('hidden'); }
+            finally { 
+                clearInterval(loadingInterval);
+                btn.disabled = false; 
+                gLoader.classList.add('hidden'); 
+            }
         }
 
-        function processCSV(text) {
+        async function processCSV(text) {
             const rows = text.trim().split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
             const originalHeaders = rows[0], originalData = rows.slice(1);
             const indices = []; filteredHeaders = [];
@@ -481,22 +566,37 @@
                     if (cleanH.includes("שניות")) filteredHeaders.push("משך");
                     else if (cleanH === "התחלה שעה") filteredHeaders.push("שעה");
                     else filteredHeaders.push(cleanH);
-                    if (cleanH === "קובץ" || cleanH === "השמעה") { filteredHeaders.push("שדרן"); filteredHeaders.push("תוכן"); }
+                    
+                    if (cleanH === "שלוחה") filteredHeaders.push("שם השלוחה");
+                    
+                    if (cleanH === "קובץ" || cleanH === "השמעה") { 
+                        filteredHeaders.push("שדרן"); 
+                        filteredHeaders.push("תוכן"); 
+                    }
                 }
             });
+
+            const uniqueExts = [...new Set(originalData.map(row => (row[shIdx] || "").replace(/\//g, ".").trim()))].filter(e => e);
+            for (const ext of uniqueExts) {
+                await getIvrTitle(ext); 
+            }
 
             filteredDataRows = originalData.map(row => {
                 let newRow = [], rawSecs = parseInt(row[durIdx]) || 0;
                 newRow._rawSeconds = rawSecs;
-                newRow._cleanShluha = (row[shIdx] || "").replace(/\//g, "").trim();
+                newRow._cleanShluha = (row[shIdx] || "").replace(/\//g, ".").trim(); 
                 newRow._rawFileNum = Number(row[fileIdx] || "").toString();
-                newRow._originalShluha = (row[shIdx] || "").trim();
+                newRow._originalShluha = (row[shIdx] || "").replace(/\//g, ".").trim(); 
                 newRow._rawPhone = (row[phoneIdx] || "").trim() || "חסוי";
                 newRow._rawName = (row[nameIdx] || "").trim() || "---";
 
                 indices.forEach(idx => {
                     let val = (row[idx] || "").trim(), h = originalHeaders[idx].replace(/"/g, '').trim();
-                    if (h === "שלוחה") newRow.push(val.replace(/\//g, "."));
+                    if (h === "שלוחה") {
+                        const displayVal = val.replace(/\//g, ".");
+                        newRow.push(displayVal);
+                        newRow.push(ivrTitlesCache[displayVal.replace(/\./g, "/")] || ""); 
+                    }
                     else if (h.includes("שניות")) newRow.push(secondsToHHMMSS(val));
                     else newRow.push(val);
                     if (h === "קובץ" || h === "השמעה") {
@@ -618,21 +718,22 @@
             const map = {};
             searchResults.forEach(r => {
                 const ext = r._originalShluha || "---";
-                if(!map[ext]) map[ext] = { name: ext, secs: 0 };
+                const internalExt = ext.replace(/\./g, "/");
+                const title = ivrTitlesCache[internalExt] || "";
+                if(!map[ext]) map[ext] = { name: ext, title: title, secs: 0 };
                 map[ext].secs += r._rawSeconds;
             });
-            currentExtensionSummary = Object.values(map).map(i => ({ name: i.name, minutes: Math.floor(i.secs/60) })).filter(i => i.minutes > 0).sort((a,b) => a.name.localeCompare(b.name, 'he'));
+            currentExtensionSummary = Object.values(map).map(i => ({ name: i.name, title: i.title, minutes: Math.floor(i.secs/60) })).filter(i => i.minutes > 0).sort((a,b) => a.name.localeCompare(b.name, 'he'));
             displayedExtensionSummary = [...currentExtensionSummary]; renderExtensionSummary();
             document.getElementById('extensionSummaryModal').style.display = 'flex';
         }
 
         function renderExtensionSummary() {
-            document.getElementById('extensionSummaryBody').innerHTML = displayedExtensionSummary.map(i => `<tr class="border-b"><td class="p-3 text-center font-bold">${i.name}</td><td class="p-3 text-center font-bold text-slate-700">${i.minutes}</td></tr>`).join('');
+            document.getElementById('extensionSummaryBody').innerHTML = displayedExtensionSummary.map(i => `<tr class="border-b"><td class="p-3 text-center font-bold">${i.name}</td><td class="p-3 text-center font-medium text-slate-600">${i.title}</td><td class="p-3 text-center font-bold text-slate-700">${i.minutes}</td></tr>`).join('');
         }
 
         function openPhoneSummary() {
             const map = {};
-            // Use searchResults (already in order for names as specified)
             searchResults.forEach(r => {
                 const phone = r._rawPhone;
                 if(!map[phone]) { map[phone] = { phone: phone, name: r._rawName, secs: 0 }; }
@@ -668,7 +769,7 @@
 
         function handleExtensionSummarySearch() {
             const q = document.getElementById('extensionSearchInput').value.toLowerCase();
-            displayedExtensionSummary = currentExtensionSummary.filter(i => i.name.toLowerCase().includes(q));
+            displayedExtensionSummary = currentExtensionSummary.filter(i => i.name.toLowerCase().includes(q) || i.title.toLowerCase().includes(q));
             renderExtensionSummary();
         }
 
@@ -705,8 +806,8 @@
         }
 
         function exportExtensionSummaryData() {
-            const headers = ["שלוחה", "דקות האזנה"];
-            let csv = "\uFEFF" + headers.join(",") + "\n" + displayedExtensionSummary.map(i => [i.name, i.minutes].join(",")).join("\n");
+            const headers = ["שלוחה", "שם השלוחה", "דקות האזנה"];
+            let csv = "\uFEFF" + headers.join(",") + "\n" + displayedExtensionSummary.map(i => [i.name, i.title, i.minutes].join(",")).join("\n");
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "extension_summary_report.csv"; link.click();
         }
