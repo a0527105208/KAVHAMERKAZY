@@ -570,11 +570,13 @@
         }
 
         function render() {
+            const displayList = searchResults.filter(r => r._rawSeconds >= 5);
+            
             const s = (currentPage - 1) * rowsPerPage;
-            document.getElementById('tableBody').innerHTML = searchResults.slice(s, s + rowsPerPage).map(r => `<tr class="hover:bg-blue-50/50">${r.map(c => `<td class="p-3 border-b text-center text-slate-700">${c}</td>`).join('')}</tr>`).join('');
-            const tp = Math.ceil(searchResults.length / rowsPerPage) || 1;
+            document.getElementById('tableBody').innerHTML = displayList.slice(s, s + rowsPerPage).map(r => `<tr class="hover:bg-blue-50/50">${r.map(c => `<td class="p-3 border-b text-center text-slate-700">${c}</td>`).join('')}</tr>`).join('');
+            const tp = Math.ceil(displayList.length / rowsPerPage) || 1;
             document.querySelectorAll('.pageIndicator').forEach(e => e.innerText = `דף ${currentPage} מתוך ${tp}`);
-            document.getElementById('statsTop').innerText = `סה"כ ${searchResults.length} שורות`;
+            document.getElementById('statsTop').innerText = `סה"כ ${displayList.length} שורות`;
         }
 
         function handleSearch() {
@@ -582,7 +584,10 @@
         }
 
         function prevPage() { if(currentPage > 1) { currentPage--; render(); } }
-        function nextPage() { if(currentPage < Math.ceil(searchResults.length/rowsPerPage)) { currentPage++; render(); } }
+        function nextPage() { 
+            const displayList = searchResults.filter(r => r._rawSeconds >= 5);
+            if(currentPage < Math.ceil(displayList.length/rowsPerPage)) { currentPage++; render(); } 
+        }
         function updateRowsPerPage(v) { rowsPerPage = parseInt(v); currentPage = 1; render(); }
 
         /* Summaries */
@@ -685,7 +690,8 @@
         function sortExtensionSummaryByDuration() { displayedExtensionSummary.sort((a,b) => b.minutes - a.minutes); renderExtensionSummary(); }
 
         function exportData() {
-            let csv = "\uFEFF" + filteredHeaders.join(",") + "\n" + searchResults.map(r => r.join(",")).join("\n");
+            const displayList = searchResults.filter(r => r._rawSeconds >= 5);
+            let csv = "\uFEFF" + filteredHeaders.join(",") + "\n" + displayList.map(r => r.join(",")).join("\n");
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
