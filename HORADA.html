@@ -111,18 +111,25 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-3 gap-3">
+            <div class="grid grid-cols-2 gap-3">
                 <div class="space-y-1">
-                    <label class="block text-[10px] font-bold text-slate-600 px-1">שלוחה</label>
-                    <input type="text" id="shluha" placeholder="לדוג' 3/04/1" class="w-full px-2 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-sm">
+                    <label class="block text-xs font-bold text-slate-600 px-1">שלוחה</label>
+                    <input type="text" id="shluha" placeholder="לדוג' 3/04/1" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-sm">
                 </div>
                 <div class="space-y-1">
-                    <label class="block text-[10px] font-bold text-slate-600 px-1">מ-קובץ</label>
-                    <input type="number" id="start" placeholder="לדוג' 000" class="w-full px-2 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center text-sm font-bold">
+                    <label class="block text-xs font-bold text-slate-600 px-1">סוג קובץ</label>
+                    <input type="text" id="file_type" value="wav" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center text-sm font-bold">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-600 px-1">מ-קובץ</label>
+                    <input type="number" id="start" placeholder="לדוג' 000" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center text-sm font-bold">
                 </div>
                 <div class="space-y-1">
-                    <label class="block text-[10px] font-bold text-slate-600 px-1">עד-קובץ</label>
-                    <input type="number" id="end" placeholder="לדוג' 9999" class="w-full px-2 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center text-sm font-bold">
+                    <label class="block text-xs font-bold text-slate-600 px-1">עד-קובץ</label>
+                    <input type="number" id="end" placeholder="לדוג' 9999" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center text-sm font-bold">
                 </div>
             </div>
 
@@ -170,6 +177,7 @@
             const systemNum = document.getElementById('system_number').value;
             const password = document.getElementById('password').value;
             const shluha = document.getElementById('shluha').value;
+            const fileType = document.getElementById('file_type').value || 'wav';
             
             const startVal = document.getElementById('start').value;
             const endVal = document.getElementById('end').value;
@@ -200,11 +208,12 @@
 
             for (let i = start; i <= end; i++) {
                 let formattedNum = i < 1000 ? i.toString().padStart(3, '0') : i.toString();
-                let url = `https://www.call2all.co.il/ym/api/DownloadFile?token=${token}&path=ivr2:/${shluha}/${formattedNum}.wav`;
+                let fileName = `${formattedNum}.${fileType}`;
+                let url = `https://www.call2all.co.il/ym/api/DownloadFile?token=${token}&path=ivr2:/${shluha}/${fileName}`;
                 
                 const entry = document.createElement('div');
                 entry.className = "mb-1";
-                entry.textContent = `> מוריד: ${formattedNum}.wav`;
+                entry.textContent = `> מוריד: ${fileName}`;
                 log.appendChild(entry);
                 log.scrollTop = log.scrollHeight;
 
@@ -215,7 +224,7 @@
                         const downloadUrl = window.URL.createObjectURL(blob);
                         const a = document.createElement('a');
                         a.href = downloadUrl;
-                        a.download = `${formattedNum}.wav`;
+                        a.download = fileName;
                         document.body.appendChild(a);
                         a.click();
                         a.remove();
@@ -249,4 +258,3 @@
     </script>
 </body>
 </html>
-
