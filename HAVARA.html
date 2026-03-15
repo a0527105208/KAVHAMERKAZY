@@ -313,6 +313,15 @@
         const CONTACTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkWP3PGv8y7-gfW6lG6mPy7P7gVrKIlBw6qcyjaqdM46cP60OVZO_8lDb28t6I-zGV9bIdiF-m3ApD/pub?gid=0&single=true&output=csv";
         let contactsMap = new Map();
 
+        // Handle Enter key for inputs
+        document.querySelectorAll('.input-field').forEach(input => {
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    fetchData();
+                }
+            });
+        });
+
         // Modal Logic
         function openModal(title, callback) {
             document.getElementById('modalTitle').innerText = title;
@@ -351,12 +360,29 @@
 
         function togglePlayer(index) {
             const playerContainer = document.getElementById(`player-container-${index}`);
-            const isVisible = playerContainer.classList.contains('active');
-            document.querySelectorAll('.audio-player-container').forEach(p => p.classList.remove('active'));
-            if (!isVisible) {
+            const isCurrentlyVisible = playerContainer.classList.contains('active');
+            
+            // Close all other players and pause their audio
+            document.querySelectorAll('.audio-player-container').forEach(container => {
+                if (container.id !== `player-container-${index}`) {
+                    container.classList.remove('active');
+                    const otherAudio = container.querySelector('audio');
+                    if (otherAudio) {
+                        otherAudio.pause();
+                        otherAudio.currentTime = 0;
+                    }
+                }
+            });
+
+            // Toggle current player
+            if (!isCurrentlyVisible) {
                 playerContainer.classList.add('active');
                 const audio = playerContainer.querySelector('audio');
-                audio.play();
+                if (audio) audio.play();
+            } else {
+                playerContainer.classList.remove('active');
+                const audio = playerContainer.querySelector('audio');
+                if (audio) audio.pause();
             }
         }
 
