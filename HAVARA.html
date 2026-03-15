@@ -185,6 +185,12 @@
             align-items: center;
             justify-content: center;
             margin: 0 auto;
+            transition: transform 0.2s;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            background: #2563eb;
         }
 
         #modalOverlay {
@@ -204,6 +210,9 @@
 </head>
 <body>
 
+    <!-- Hidden Audio Player -->
+    <audio id="globalAudioPlayer" class="hidden"></audio>
+
     <!-- Modal -->
     <div id="modalOverlay">
         <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-sm w-full shadow-2xl">
@@ -219,7 +228,10 @@
     <div class="glass max-w-[98%] w-full rounded-[2.5rem] p-6 space-y-5 my-4">
         
         <div class="flex flex-col items-center">
-            <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-14 h-14 rounded-full border-4 border-white shadow-lg mb-2">
+            <!-- לוגו עם קישור לדף הבית -->
+            <a href="index.html" title="חזרה לדף הבית">
+                <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-14 h-14 rounded-full border-4 border-white shadow-lg mb-2 transition-transform hover:scale-105">
+            </a>
             <h1 class="text-xl font-bold text-slate-800">ניהול קבצים</h1>
             <p class="text-blue-600 font-bold tracking-wide uppercase text-[9px]">הקו המרכזי - פותח ע"י יצחק לרנר</p>
         </div>
@@ -249,7 +261,7 @@
                 </div>
             </div>
 
-            <!-- Toolbar with Center Info -->
+            <!-- Toolbar -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/60 p-2.5 rounded-2xl border border-white/80 shadow-sm">
                 <div class="flex items-center gap-2 flex-1">
                     <button onclick="toggleSelectAll()" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 transition-colors hover:bg-blue-100">בחר הכל</button>
@@ -284,9 +296,9 @@
     </div>
 
     <script>
-        // המיפוי נטען כעת מקובץ translations.js
         let currentFiles = [];
         let selectedFiles = new Set();
+        let currentlyPlayingIndex = null;
         const CONTACTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkWP3PGv8y7-gfW6lG6mPy7P7gVrKIlBw6qcyjaqdM46cP60OVZO_8lDb28t6I-zGV9bIdiF-m3ApD/pub?gid=0&single=true&output=csv";
         let contactsMap = new Map();
 
@@ -303,6 +315,53 @@
                     }
                 });
             } catch (e) {}
+        }
+
+        // פונקציית נגינה משופרת
+        function playFile(e, index) {
+            e.stopPropagation(); // מונע את בחירת הכרטיסייה
+            const audio = document.getElementById('globalAudioPlayer');
+            const file = currentFiles[index];
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            
+            const fileUrl = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
+
+            if (currentlyPlayingIndex === index) {
+                if (!audio.paused) {
+                    audio.pause();
+                    updatePlayIcon(index, false);
+                } else {
+                    audio.play();
+                    updatePlayIcon(index, true);
+                }
+            } else {
+                // עצירת קובץ קודם אם מתנגן
+                if (currentlyPlayingIndex !== null) updatePlayIcon(currentlyPlayingIndex, false);
+                
+                audio.src = fileUrl;
+                audio.play();
+                currentlyPlayingIndex = index;
+                updatePlayIcon(index, true);
+            }
+
+            audio.onended = () => {
+                updatePlayIcon(index, false);
+                currentlyPlayingIndex = null;
+            };
+        }
+
+        function updatePlayIcon(index, isPlaying) {
+            const btn = document.querySelector(`#card-${index} .play-btn`);
+            if (!btn) return;
+            if (isPlaying) {
+                btn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+                btn.classList.add('bg-orange-500');
+            } else {
+                btn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+                btn.classList.remove('bg-orange-500');
+            }
         }
 
         function toggleFile(index) {
@@ -389,10 +448,9 @@
                 const numB = parseInt(currentFiles[b].name) || 0;
                 return numA - numB;
             });
-
             for (const idx of sortedIndices) {
                 downloadFile(idx);
-                await new Promise(r => setTimeout(r, 300)); // Delay to prevent browser blocking multiple downloads
+                await new Promise(r => setTimeout(r, 400));
             }
         }
 
@@ -420,7 +478,6 @@
                 const numB = parseInt(currentFiles[b].name) || 0;
                 return numA - numB;
             });
-
             for (const idx of sortedIndices) {
                 await executeFileAction(action, currentFiles[idx].name, target);
                 await new Promise(r => setTimeout(r, 150));
@@ -455,7 +512,6 @@
 
                     if (data.extIni) {
                         document.getElementById('extTitle').innerText = data.extIni.title || "שלוחה ללא שם";
-                        // שימוש במשתנה extensionTypeTranslations מהקובץ החיצוני
                         const typeLabel = (typeof extensionTypeTranslations !== 'undefined') 
                             ? (extensionTypeTranslations[data.extIni.type] || data.extIni.type || "כללי")
                             : (data.extIni.type || "כללי");
@@ -487,7 +543,9 @@
                                 </div>
 
                                 <div class="mt-6 mb-2 flex items-center justify-center">
-                                    <div class="play-btn"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+                                    <button class="play-btn" onclick="playFile(event, ${i})">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                    </button>
                                 </div>
                                 <h4 class="font-bold text-slate-800 text-[10px] line-clamp-2 px-1 mb-1">${title}</h4>
                                 <div class="mt-auto bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-[8px] space-y-0.5 font-bold">
