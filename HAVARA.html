@@ -6,6 +6,7 @@
     <title>ניהול שלוחות - הקו המרכזי</title>
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="translations.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;700;800&display=swap');
         
@@ -41,42 +42,48 @@
             transition: all 0.2s;
         }
 
-        .input-field:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
         .file-card {
             background: white;
             border-radius: 1.25rem;
             padding: 1rem;
             transition: all 0.3s ease;
-            border: 1px solid #edf2f7;
+            border: 2px solid #edf2f7;
             display: flex;
             flex-direction: column;
             text-align: center;
             height: 100%;
             position: relative;
+            cursor: pointer;
         }
 
-        .file-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        .file-card.selected {
             border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .file-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #3b82f6;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 30;
         }
 
         .results-container {
-            max-height: 70vh; 
+            max-height: 65vh; 
             overflow-y: auto;
             padding: 5px;
-        }
-
-        .results-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .results-container::-webkit-scrollbar-thumb {
-            background-color: #cbd5e0;
-            border-radius: 10px;
         }
 
         .loader {
@@ -89,9 +96,19 @@
             display: inline-block;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #bulkActionsBar {
+            display: none;
+            position: sticky;
+            top: 0;
+            z-index: 45;
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         .file-badge {
@@ -108,65 +125,54 @@
             z-index: 10;
         }
 
-        .menu-container {
+        .options-btn {
             position: absolute;
             top: 0.5rem;
             left: 0.5rem;
+            padding: 4px;
+            color: #94a3b8;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
             z-index: 20;
         }
 
-        .menu-btn {
-            padding: 0.2rem;
-            border-radius: 0.4rem;
-            color: #94a3b8;
-            transition: all 0.2s;
-            cursor: pointer;
-            background: transparent;
-            border: none;
-        }
-
-        .menu-btn:hover {
-            background: #f8fafc;
+        .options-btn:hover {
+            background: #f1f5f9;
             color: #3b82f6;
         }
 
         .dropdown-menu {
             display: none;
             position: absolute;
-            top: 100%;
-            left: 0;
+            top: 2.5rem;
+            left: 0.5rem;
             background: white;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             border-radius: 0.75rem;
             border: 1px solid #e2e8f0;
-            min-width: 130px;
+            min-width: 100px;
+            z-index: 50;
             overflow: hidden;
-            margin-top: 0.5rem;
         }
 
-        .dropdown-menu.active {
-            display: block;
-        }
+        .dropdown-menu.active { display: block; }
 
         .dropdown-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
             padding: 0.5rem 0.75rem;
-            font-size: 0.75rem;
+            font-size: 10px;
+            font-weight: bold;
             color: #475569;
-            width: 100%;
             text-align: right;
-            transition: background 0.2s;
-            text-decoration: none;
             cursor: pointer;
-            border: none;
-            background: none;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f1f5f9;
         }
 
+        .dropdown-item:last-child { border-bottom: none; }
+
         .dropdown-item:hover {
-            background: #f1f5f9;
-            color: #2563eb;
+            background: #f8fafc;
+            color: #3b82f6;
         }
 
         .play-btn {
@@ -179,28 +185,6 @@
             align-items: center;
             justify-content: center;
             margin: 0 auto;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-
-        .play-btn:hover {
-            background: #2563eb;
-            transform: scale(1.05);
-        }
-
-        .audio-player-container {
-            display: none;
-            margin-top: 6px;
-            width: 100%;
-        }
-
-        .audio-player-container.active {
-            display: block;
-        }
-
-        audio {
-            width: 100%;
-            height: 24px;
         }
 
         #modalOverlay {
@@ -216,58 +200,14 @@
             justify-content: center;
             backdrop-filter: blur(2px);
         }
-        
-        .modal-content {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 1.25rem;
-            max-width: 350px;
-            width: 90%;
-        }
-
-        .nav-btn {
-            background: white;
-            border: 1px solid #e2e8f0;
-            padding: 0.35rem 0.6rem;
-            border-radius: 0.6rem;
-            font-size: 0.75rem;
-            font-weight: 700;
-            color: #475569;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .nav-btn:hover:not(:disabled) {
-            border-color: #3b82f6;
-            color: #3b82f6;
-            background: #f8fafc;
-        }
-
-        .nav-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .small-select {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.7rem;
-            font-weight: 700;
-            border-radius: 0.5rem;
-            border: 1px solid #e2e8f0;
-            background: white;
-            outline: none;
-            cursor: pointer;
-        }
     </style>
 </head>
 <body>
 
     <!-- Modal -->
     <div id="modalOverlay">
-        <div class="modal-content text-center">
-            <h3 id="modalTitle" class="text-lg font-bold text-slate-800 mb-3">בחר שלוחה</h3>
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-sm w-full shadow-2xl">
+            <h3 id="modalTitle" class="text-lg font-bold text-slate-800 mb-3"></h3>
             <input type="text" id="targetExtensionInput" placeholder="לדוגמה: 1/2" class="input-field text-center font-bold mb-4">
             <div class="flex gap-2">
                 <button id="modalConfirmBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-xl font-bold hover:bg-blue-700">אישור</button>
@@ -279,29 +219,17 @@
     <div class="glass max-w-[98%] w-full rounded-[2.5rem] p-6 space-y-5 my-4">
         
         <div class="flex flex-col items-center">
-            <a href="index.html" class="transition-transform hover:scale-105">
-                <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-14 h-14 rounded-full border-4 border-white shadow-lg mb-2">
-            </a>
+            <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-14 h-14 rounded-full border-4 border-white shadow-lg mb-2">
             <h1 class="text-xl font-bold text-slate-800">ניהול קבצים</h1>
             <p class="text-blue-600 font-bold tracking-wide uppercase text-[9px]">הקו המרכזי - פותח ע"י יצחק לרנר</p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white/40 p-4 rounded-3xl border border-white/50">
-            <div>
-                <label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">מספר מערכת</label>
-                <input type="text" id="systemNumber" value="033137787" class="input-field text-center font-bold text-xs py-2">
-            </div>
-            <div>
-                <label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">סיסמה</label>
-                <input type="password" id="password" value="8549052" class="input-field text-center font-bold text-xs py-2">
-            </div>
-            <div>
-                <label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">שלוחה</label>
-                <input type="text" id="extension" value="6/7" class="input-field text-center font-bold text-xs py-2">
-            </div>
+            <div><label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">מספר מערכת</label><input type="text" id="systemNumber" value="033137787" class="input-field text-center font-bold text-xs py-2"></div>
+            <div><label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">סיסמה</label><input type="password" id="password" value="8549052" class="input-field text-center font-bold text-xs py-2"></div>
+            <div><label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">שלוחה</label><input type="text" id="extension" value="6/7" class="input-field text-center font-bold text-xs py-2"></div>
         </div>
 
-        <!-- Hidden State -->
         <input type="hidden" id="filesFromInput" value="0">
 
         <button onclick="fetchData()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-2xl shadow-md transition-all active:scale-95 text-sm flex items-center justify-center gap-2">
@@ -310,258 +238,57 @@
 
         <div id="resultsWrapper" class="hidden space-y-3">
             
-            <!-- Ext Info Display -->
-            <div id="extInfoBox" class="flex flex-wrap items-center justify-center gap-4 py-2 px-4 bg-blue-600 text-white rounded-2xl shadow-sm text-center">
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] opacity-80 font-bold">שם שלוחה:</span>
-                    <span id="extTitle" class="font-bold text-sm">--</span>
-                </div>
-                <div class="h-4 w-[1px] bg-white/30 hidden sm:block"></div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] opacity-80 font-bold">סוג שלוחה:</span>
-                    <span id="extType" class="font-bold text-sm">--</span>
+            <!-- Bulk Bar -->
+            <div id="bulkActionsBar" class="flex items-center justify-between">
+                <div class="text-xs font-bold">נבחרו <span id="selectedCount">0</span> קבצים</div>
+                <div class="flex gap-2">
+                    <button onclick="bulkDownload()" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">הורדה</button>
+                    <button onclick="bulkAction('copy')" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">העתקה</button>
+                    <button onclick="bulkAction('move')" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">העברה</button>
+                    <button onclick="bulkAction('delete')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">מחיקה</button>
                 </div>
             </div>
 
-            <!-- Consolidated Pagination Bar -->
+            <!-- Toolbar with Center Info -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/60 p-2.5 rounded-2xl border border-white/80 shadow-sm">
-                
-                <div class="flex items-center gap-2">
-                    <span id="rangeLabel" class="text-[11px] text-slate-600 font-bold bg-white px-2 py-1 rounded-lg border border-slate-100"></span>
+                <div class="flex items-center gap-2 flex-1">
+                    <button onclick="toggleSelectAll()" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 transition-colors hover:bg-blue-100">בחר הכל</button>
+                    <span id="rangeLabel" class="text-[10px] text-slate-600 font-bold bg-white px-2 py-1 rounded-lg border border-slate-100"></span>
                     <span id="fileCount" class="text-[10px] text-blue-600 font-extrabold bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">0</span>
                 </div>
 
-                <div class="flex items-center gap-2">
-                    <div class="flex items-center gap-1 border-l pl-2 border-slate-200">
-                        <button onclick="changePage(-1)" id="prevBtn" class="nav-btn" title="הקודמים">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                        <button onclick="changePage(1)" id="nextBtn" class="nav-btn" title="הבאים">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" /></svg>
-                        </button>
-                    </div>
+                <div id="centerExtInfo" class="flex flex-col items-center justify-center flex-1 text-center">
+                    <span id="extTitle" class="font-extrabold text-blue-800 text-xs"></span>
+                    <span id="extType" class="text-slate-500 font-bold text-[9px] opacity-75"></span>
+                </div>
 
+                <div class="flex items-center gap-2 flex-1 justify-end">
                     <div class="flex items-center gap-1">
-                        <span class="text-[9px] font-bold text-slate-400">כמות:</span>
-                        <select id="filesLimitInput" onchange="fetchData()" class="small-select text-blue-600 border-blue-100">
-                            <option value="25" selected>25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                            <option value="500">500</option>
-                        </select>
+                        <button onclick="changePage(-1)" id="prevBtn" class="bg-white border p-1 rounded-lg hover:bg-slate-50 transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M9 5l7 7-7 7"/></svg></button>
+                        <button onclick="changePage(1)" id="nextBtn" class="bg-white border p-1 rounded-lg hover:bg-slate-50 transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
                     </div>
-
-                    <button onclick="resetPagination()" class="nav-btn p-1.5" title="חזרה להתחלה">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
-                    </button>
+                    <select id="filesLimitInput" onchange="fetchData()" class="text-[10px] font-bold border rounded-lg p-1 bg-white outline-none">
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="250">250</option>
+                        <option value="500">500</option>
+                    </select>
                 </div>
             </div>
 
             <div class="results-container">
-                <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10 gap-3 pb-4">
-                    <!-- Cards -->
-                </div>
+                <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-4"></div>
             </div>
-        </div>
-
-        <div class="text-center pt-2 border-t border-white/20">
-            <p class="text-[9px] text-slate-400 font-medium">© פותח עבור הקו המרכזי</p>
         </div>
     </div>
 
     <script>
-        // Mapping Object for Extension Types
-        const extensionTypeTranslations = {
-            "menu": "תפריט",
-            "playfile": "השמעת קבצים",
-            "confbridge": "חדר ועידה או שידור חי",
-            "admin_login": "כניסה לניהול",
-            "record": "הקלטות",
-            "routing": "ניתוב השיחה למספרי טלפון ישראליים",
-            "routing_time": "ניתוב שיחה לפי שעות",
-            "routing_yemot": "הפניה למערכת תכנים אחרת בימות המשיח",
-            "points_say_total": "השמעת הניקוד שנצבר",
-            "last_play": "חזרה להשמעה אחרונה",
-            "voicemail_email": "תא קולי השולח העתק לדואר האלקטרוני",
-            "template_add_number": "הוספת מספר לרשימת תפוצה",
-            "template_remove_number": "הסרת מספר מרשימת תפוצה",
-            "menu_star": "תפריט מקש כוכבית",
-            "message_options_menu": "הוראות הפעלה",
-            "oref_alerts": "התראות צבע אדום",
-            "oref_alerts_quiet_wave": "הגל השקט לאזעקות",
-            "zmanim": "מערכת זמני היום",
-            "exchange_rates": "שערי מטח",
-            "play_and_return": "השמעת הודעה אחת בלבד",
-            "toplay_time": "השמעת הודעת לפי תאריך עברי, לועזי, ספירת העומר, חנוכה, כולל הגבלת הפעמים להשמעת הודעה למאזין",
-            "chapter_receive": "חלוקת פרקי תהילים, גמרא, פרשות, דפים ועמודים",
-            "trivia_questions": "שאלות טרוויה ונכון או לא נכון",
-            "open_wap_reseller_customer": "פתיחת וצאפפון ובלוג פון",
-            "say_hour_and_minute": "השמעת השעה כעת",
-            "approval_number": "חלוקת מספרי אישורים",
-            "recording_and_entering_data": "קבלת נתונים",
-            "phone_play_list": "רשימות השמעה אישיות",
-            "create_ivr2": "פתיחת מערכת תכנים חדשה",
-            "routing_1800": "הפניית השיחה למספרי 1800 ו 1801",
-            "menu_voice": "תפריט עם זיהוי דיבור קולי",
-            "sending_sms": "שליחת sms",
-            "go_to_folder_time": "שלוחת העברה לתיקיות אחרות לפי שעות או ימים",
-            "stt_dir_all_file": "שלוחת המרת קבצי קול לטקסט",
-            "points_save": "שלוחת הוספת ניקוד",
-            "hangup": "שלוחת ניתוק השיחה",
-            "start_select_file": "שלוחה המאפשרת למאזין לבחור האם בשלוחת השמעת קבצים יהיה לו תפריט בחירת קובץ או לא",
-            "playdir_time": "שידור חי מדומה, מרובה קבצים, השמעת כל הקבצים בשלוחה בהתאם לזמן המוגדר",
-            "private_did_customer": "קבלת או שליחת מספר אישי",
-            "tzintuk": "הפעלת צינתוק, ושלוחה להרשמה או הוספה מרשימת הצינתוקים",
-            "go_to_folder_from_list_all_information": "פילטר לפי רשימות, העברה לשלוחה אחרת לפי הגדרות ספציפיות ללקוח לפי קובץ",
-            "nedarim_plus": "סליקת אשראי דרך נדרים פלוס",
-            "pelecard": "סליקת אשראי דרך פלאקארד",
-            "cardcom": "סליקת אשראי דרך קרדקום",
-            "sale_seats": "מערכת מכירת מושבים",
-            "chapter_receive_mishnayot_select": "מערכת חלוקת משניות, כולל שמיעת המשניות משלוש רבנים, ודוחות לימוד",
-            "study_tracking": "מעקב לימודים",
-            "go_to_folder_count": "מעבר לשלוחות שונות, כשיש פחות או יותר מכמות, כל שהיא, של מאזינים שעברו במודול הזה",
-            "go_to_folder": "מעבר לשלוחה אחרת",
-            "music_on_hold": "מוזיקה בהמתנה ושידורים חיים מערוצים שונים",
-            "queue": "מודל תור",
-            "send_fax": "שליחת פקס",
-            "recv_fax": "קבלת פקס",
-            "examination": "מודל מבחן",
-            "seker": "שלוחת סקר",
-            "fundraising": "מודול מעקב גיוס תרומות",
-            "members_active": "מודול כמות חברים פעילים",
-            "counter_calculator": "מודל חישוב מונה",
-            "donation_campaign": "מודל התרמות, מצינג",
-            "points_edit": "מודול הוספת או הורדת נקודות ללקוח על ידי מנהלים",
-            "yemot_dialer_campaign_list": "מודול הוספה, הסרה או חסימה מתבניות רשימות התפוצה",
-            "tehillim_select_save_and_listen": "מודול בחירת ושמירת פרק תהילים קבוע ללקוח",
-            "points_to_other_id": "הוספת ניקוד למשתמש אחר",
-            "api": "תקשור עם מחשבים וממשקי נתונים חיצוניים",
-            "examination_american": "מבחן אמריקאי",
-            "key_play_set_record_go_to_foldar": "כניסה לפי מפתח, הגבלת כניסות, השמעת הודעה, תפריט, הקלטה, ומעבר לתיקיה אחרת",
-            "block_id_type": "חסימת משתמש",
-            "coupon": "חלוקת קופונים",
-            "credit_card": "התחברות למנוע סליקה כללי",
-            "id_message": "השמעת נתונים והודעות אישיות",
-            "id_list_message": "השמעת הודעות ללקוח ברצף",
-            "record_system_messages": "הקלטת הודעות מערכת בשלוחה",
-            "folder_play_random": "הפעלת שלוחה רנדומלית",
-            "playfile_time": "הפעלת קובץ בשעה מתוזמנת, שידור חי מדומה",
-            "yemot_dialer_campaign_start": "הפעלה מהירה לקמפיין",
-            "template_filter": "הפניית משתמשים לשלוחות שונות לפי רשימת התפוצה",
-            "sale_products": "הזמנת מוצרים לפי מספר קטלוגי",
-            "daily_message": "הודעה יומית מתחלפת ומעבר לשלוחה אחרת",
-            "go_to_folder_date": "ההעברה לשלוחה אחרת, לפי תאריך עברי או לועזי או ו לפי שעה או דקה",
-            "tasks_report": "דיווח משימות יומי",
-            "checking_units": "בדיקת יתרת יחידות נמוכה או פג תוקף מתקרב",
-            "time_keeper": "שעון נוכחות",
-            "routing_ip": "ניתוב שיחה למחשב חיצוני",
-            "points_and_rating": "מודול נקודות ללקוח על קניה, ודירוג בעל העסק",
-            "limit_call_seconds": "הגבלת אורך השיחה, טיימר",
-            "calculator_add_percentage": "מחשבון אחוזי תוספת",
-            "access_filter": "פילטר כניסה לפי תאריך עם אפשרויות שונות ואפשרות הגבלת כמות הכניסות",
-            "number_now_is": "המספר כעת הוא",
-            "say_amount_subscribers": "השמעת כמות נרשמים מתוך שלוחת קבלת נתונים",
-            "amount_incoming_phone_numbers": "ספירת כמות מספרי טלפון שונים שנכנסו לשלוחה",
-            "nitoviya": "קבלת או שליחת ניתוביה",
-            "nitoviya_b_say_number": "שמיעת מספר ניתוביה",
-            "donation_campaign_some_actions": "שלוחת מצינג עם הגדרות נוספות",
-            "private_did": "הוצאת וקבלת שיחות",
-            "add_id_to_list": "הוספת ערך ID של המתקשר או ערך מוגדר מראש לקובץ במערכת לבחירתכם",
-            "remove_id_from_list": "הסרת ערך ID של המתקשר או ערך מוגדר מראש מקובץ במערכת לבחירתכם",
-            "yemot_dialer": "שלוחה לניהול קמפיין",
-            "sending_sms_and_return": "שליחת sms ללקוח בכניסה לשלוחה ומעבר לשלוחה אחרת",
-            "clicks": "השמעת קבצים עם קליקרים, המודול הנוכחי",
-            "playfile_and_enter_digits_time": "מודול הפעלת קבצים עם הכנסת מקשים לפי זמן / קליקרים + שידור חי רציף מדומה מרובה קבצים",
-            "sip": "שירות המאפשר לקבל חשבון SIP כדי להוציא ולקבל שיחות",
-            "digi_call": "שלוחה טלפונית עבור שאלונים",
-            "codes": "מודול חלוקת קודים",
-            "create_tts": "מודול יצירת קבצי tts",
-            "seker_questions": "מודול סקר המבוסס על שאלות סקר",
-            "missed_calls": "שלוחה שתשלח סמס/מייל על \"שיחה שלא נענתה\"",
-            "change_access_password": "מודול שינוי 'סיסמת גישה' במערכת",
-            "change_record_password": "מודול שינוי 'סיסמת הקלטות' במערכת",
-            "change_admin_password": "מודול שינוי 'סיסמת ניהול' במערכת",
-            "file_to_email": "מודול לשליחת קובץ שבשלוחה, למייל של המתקשר",
-            "get_brachot": "מודול למעקב אחר ברכות יומיות",
-            "dial_telegram": "שלוחה שתעביר את השיחה כשיחת טלגרם למשתמש טלגרם"
-        };
-
+        // המיפוי נטען כעת מקובץ translations.js
+        let currentFiles = [];
+        let selectedFiles = new Set();
         const CONTACTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkWP3PGv8y7-gfW6lG6mPy7P7gVrKIlBw6qcyjaqdM46cP60OVZO_8lDb28t6I-zGV9bIdiF-m3ApD/pub?gid=0&single=true&output=csv";
         let contactsMap = new Map();
-
-        function resetPagination() {
-            document.getElementById('filesFromInput').value = 0;
-            fetchData();
-        }
-
-        function changePage(direction) {
-            const fromInput = document.getElementById('filesFromInput');
-            const limit = parseInt(document.getElementById('filesLimitInput').value);
-            let currentFrom = parseInt(fromInput.value) || 0;
-            let nextFrom = currentFrom + (direction * limit);
-            if (nextFrom < 0) nextFrom = 0;
-            fromInput.value = nextFrom;
-            fetchData();
-        }
-
-        function openModal(title, callback) {
-            document.getElementById('modalTitle').innerText = title;
-            document.getElementById('modalOverlay').style.display = 'flex';
-            const input = document.getElementById('targetExtensionInput');
-            input.value = "";
-            input.focus();
-            document.getElementById('modalConfirmBtn').onclick = () => {
-                const target = input.value.trim();
-                if (target) { callback(target); closeModal(); }
-            };
-        }
-
-        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
-
-        window.addEventListener('click', (e) => {
-            if (!e.target.closest('.menu-container')) {
-                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-            }
-        });
-
-        function toggleMenu(e, id) {
-            e.stopPropagation();
-            const menu = document.getElementById(`menu-${id}`);
-            const isActive = menu.classList.contains('active');
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
-            if (!isActive) menu.classList.add('active');
-        }
-
-        function togglePlayer(index) {
-            const container = document.getElementById(`player-container-${index}`);
-            const isVisible = container.classList.contains('active');
-            document.querySelectorAll('.audio-player-container').forEach(c => {
-                c.classList.remove('active');
-                const a = c.querySelector('audio');
-                if (a) { a.pause(); a.currentTime = 0; }
-            });
-            if (!isVisible) {
-                container.classList.add('active');
-                container.querySelector('audio').play();
-            }
-        }
-
-        function stripExt(name) { return name ? name.replace(/\.[^/.]+$/, "") : ""; }
-
-        async function performAction(action, fileName, target = null) {
-            const system = document.getElementById('systemNumber').value.trim();
-            const pass = document.getElementById('password').value.trim();
-            const ext = document.getElementById('extension').value.trim();
-            let url = `https://www.call2all.co.il/ym/api/FileAction?token=${system}:${pass}&action=${action}&what=ivr2:/${ext}/${fileName}`;
-            if (target) url += `&target=ivr2:/${target}`;
-
-            try {
-                const res = await fetch(url);
-                const d = await res.json();
-                if (d.responseStatus === "OK") { fetchData(); } 
-                else { alert(d.message || "פעולה נכשלה"); }
-            } catch (e) { alert("שגיאת תקשורת"); }
-        }
 
         async function loadContacts() {
             try {
@@ -578,6 +305,129 @@
             } catch (e) {}
         }
 
+        function toggleFile(index) {
+            const card = document.getElementById(`card-${index}`);
+            if (selectedFiles.has(index)) {
+                selectedFiles.delete(index);
+                card.classList.remove('selected');
+            } else {
+                selectedFiles.add(index);
+                card.classList.add('selected');
+            }
+            updateBulkBar();
+        }
+
+        function updateBulkBar() {
+            const bar = document.getElementById('bulkActionsBar');
+            const count = document.getElementById('selectedCount');
+            count.innerText = selectedFiles.size;
+            bar.style.display = selectedFiles.size > 0 ? 'flex' : 'none';
+        }
+
+        function toggleSelectAll() {
+            const allSelected = selectedFiles.size === currentFiles.length && currentFiles.length > 0;
+            currentFiles.forEach((_, i) => {
+                const card = document.getElementById(`card-${i}`);
+                if (allSelected) { selectedFiles.delete(i); card.classList.remove('selected'); }
+                else { selectedFiles.add(i); card.classList.add('selected'); }
+            });
+            updateBulkBar();
+        }
+
+        function toggleDropdown(e, index) {
+            e.stopPropagation();
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            allDropdowns.forEach((d, i) => {
+                const dropId = d.id.split('-')[1];
+                if(dropId != index) d.classList.remove('active');
+            });
+            document.getElementById(`dropdown-${index}`).classList.toggle('active');
+        }
+
+        document.body.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active'));
+        });
+
+        async function singleAction(action, index) {
+            const file = currentFiles[index];
+            if (action === 'delete' && !confirm(`למחוק את קובץ ${file.name}?`)) return;
+            
+            if (action === 'download') {
+                downloadFile(index);
+                return;
+            }
+
+            if (action === 'copy' || action === 'move') {
+                openModal(action === 'copy' ? 'העתקת קובץ' : 'העברת קובץ', async (target) => {
+                    await executeFileAction(action, file.name, target);
+                    fetchData();
+                });
+            } else {
+                await executeFileAction(action, file.name);
+                fetchData();
+            }
+        }
+
+        function downloadFile(index) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            const file = currentFiles[index];
+            const url = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        async function bulkDownload() {
+            const sortedIndices = Array.from(selectedFiles).sort((a, b) => {
+                const numA = parseInt(currentFiles[a].name) || 0;
+                const numB = parseInt(currentFiles[b].name) || 0;
+                return numA - numB;
+            });
+
+            for (const idx of sortedIndices) {
+                downloadFile(idx);
+                await new Promise(r => setTimeout(r, 300)); // Delay to prevent browser blocking multiple downloads
+            }
+        }
+
+        async function executeFileAction(action, fileName, target = null) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            let url = `https://www.call2all.co.il/ym/api/FileAction?token=${system}:${pass}&action=${action}&what=ivr2:/${ext}/${fileName}`;
+            if (target) url += `&target=ivr2:/${target}`;
+            try { await fetch(url); } catch (e) {}
+        }
+
+        async function bulkAction(action) {
+            if (action === 'delete' && !confirm(`למחוק ${selectedFiles.size} קבצים?`)) return;
+            if (action === 'copy' || action === 'move') {
+                openModal(action === 'copy' ? 'העתקה קבוצתית' : 'העברה קבוצתית', (target) => runBulkSequence(action, target));
+            } else {
+                runBulkSequence(action);
+            }
+        }
+
+        async function runBulkSequence(action, target = null) {
+            const sortedIndices = Array.from(selectedFiles).sort((a, b) => {
+                const numA = parseInt(currentFiles[a].name) || 0;
+                const numB = parseInt(currentFiles[b].name) || 0;
+                return numA - numB;
+            });
+
+            for (const idx of sortedIndices) {
+                await executeFileAction(action, currentFiles[idx].name, target);
+                await new Promise(r => setTimeout(r, 150));
+            }
+            fetchData();
+        }
+
         async function fetchData() {
             const system = document.getElementById('systemNumber').value.trim();
             const pass = document.getElementById('password').value.trim();
@@ -586,14 +436,10 @@
             const limit = document.getElementById('filesLimitInput').value || 25;
             
             const btn = document.getElementById('mainBtn');
-            const wrapper = document.getElementById('resultsWrapper');
             const grid = document.getElementById('fileGrid');
-
-            if (!system || !pass || !ext) return;
 
             btn.disabled = true;
             btn.innerHTML = `<span class="loader"></span>`;
-            
             await loadContacts();
             
             const url = `https://www.call2all.co.il/ym/api/GetIVR2Dir?path=ivr2:/${ext}&token=${system}:${pass}&filesFrom=${from}&filesLimit=${limit}`;
@@ -601,70 +447,77 @@
             try {
                 const res = await fetch(url);
                 const data = await res.json();
-
                 if (data.responseStatus === "OK") {
-                    wrapper.classList.remove('hidden');
+                    document.getElementById('resultsWrapper').classList.remove('hidden');
                     grid.innerHTML = "";
-                    
-                    // Display Extension Info with Translation
+                    selectedFiles.clear();
+                    updateBulkBar();
+
                     if (data.extIni) {
-                        document.getElementById('extTitle').innerText = data.extIni.title || "ללא שם";
-                        const rawType = data.extIni.type || "";
-                        const translatedType = extensionTypeTranslations[rawType] || rawType || "כללי";
-                        document.getElementById('extType').innerText = translatedType;
+                        document.getElementById('extTitle').innerText = data.extIni.title || "שלוחה ללא שם";
+                        // שימוש במשתנה extensionTypeTranslations מהקובץ החיצוני
+                        const typeLabel = (typeof extensionTypeTranslations !== 'undefined') 
+                            ? (extensionTypeTranslations[data.extIni.type] || data.extIni.type || "כללי")
+                            : (data.extIni.type || "כללי");
+                        document.getElementById('extType').innerText = typeLabel;
                     }
 
-                    document.getElementById('prevBtn').disabled = parseInt(from) === 0;
+                    currentFiles = data.files || [];
+                    document.getElementById('fileCount').innerText = `סה"כ ${currentFiles.length}`;
+                    document.getElementById('rangeLabel').innerText = `מ ${parseInt(from) + 1} עד ${parseInt(from) + currentFiles.length}`;
 
-                    if (data.files && data.files.length > 0) {
-                        document.getElementById('fileCount').innerText = `סה"כ ${data.files.length}`;
-                        document.getElementById('rangeLabel').innerText = `מ ${parseInt(from) + 1} עד ${parseInt(from) + data.files.length}`;
-                        
-                        data.files.forEach((file, i) => {
-                            const phone = file.phone ? file.phone.trim() : "";
-                            const cleanP = phone.replace(/[^0-9]/g, '');
-                            const num = stripExt(file.name);
-                            const fullName = file.name;
-                            let title = contactsMap.has(cleanP) ? contactsMap.get(cleanP) : (file.meta?.title ? stripExt(file.meta.title) : num);
-                            const download = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${fullName}`;
+                    currentFiles.forEach((file, i) => {
+                        const num = file.name.replace(/\.[^/.]+$/, "");
+                        const cleanP = file.phone ? file.phone.replace(/[^0-9]/g, '') : "";
+                        const title = contactsMap.get(cleanP) || (file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : num);
 
-                            grid.insertAdjacentHTML('beforeend', `
-                                <div class="file-card shadow-sm">
-                                    <div class="menu-container">
-                                        <button onclick="toggleMenu(event, ${i})" class="menu-btn">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                                        </button>
-                                        <div id="menu-${i}" class="dropdown-menu">
-                                            <a href="${download}" target="_blank" class="dropdown-item">הורדה</a>
-                                            <button onclick="openModal('העתקה', (t) => performAction('copy', '${fullName}', t))" class="dropdown-item">העתקה</button>
-                                            <button onclick="openModal('העברה', (t) => performAction('move', '${fullName}', t))" class="dropdown-item">העברה</button>
-                                            <button onclick="if(confirm('למחוק?')) performAction('delete', '${fullName}')" class="dropdown-item text-red-600">מחיקה</button>
-                                        </div>
-                                    </div>
-                                    <div class="file-badge">${num}</div>
-                                    <div class="mt-4 mb-2">
-                                        <button onclick="togglePlayer(${i})" class="play-btn">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                                        </button>
-                                        <div id="player-container-${i}" class="audio-player-container">
-                                            <audio controls preload="none"><source src="${download}" type="audio/wav"></audio>
-                                        </div>
-                                    </div>
-                                    <h4 class="font-bold text-slate-800 text-[10px] line-clamp-2 mb-2 px-1">${title}</h4>
-                                    <div class="mt-auto bg-slate-50 p-1.5 rounded-lg border border-slate-100 space-y-0.5">
-                                        <div class="flex justify-between text-[8px] font-bold"><span class="text-slate-400">טל:</span><span class="text-slate-700">${phone || "-"}</span></div>
-                                        <div class="flex justify-between text-[8px] border-t border-slate-200 pt-0.5"><span class="text-blue-400">אורך:</span><span class="text-blue-700">${file.durationStr || "-"}</span></div>
-                                    </div>
+                        grid.insertAdjacentHTML('beforeend', `
+                            <div id="card-${i}" class="file-card shadow-sm" onclick="toggleFile(${i})">
+                                <div class="file-badge">${num}</div>
+                                
+                                <button class="options-btn" onclick="toggleDropdown(event, ${i})">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                </button>
+
+                                <div id="dropdown-${i}" class="dropdown-menu">
+                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('download', ${i})">הורדה</div>
+                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('copy', ${i})">העתקה</div>
+                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('move', ${i})">העברה</div>
+                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('delete', ${i})">מחיקה</div>
                                 </div>
-                            `);
-                        });
-                    } else {
-                        grid.innerHTML = "<div class='col-span-full p-10 text-center text-slate-400 text-xs font-bold'>אין קבצים נוספים</div>";
-                    }
+
+                                <div class="mt-6 mb-2 flex items-center justify-center">
+                                    <div class="play-btn"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+                                </div>
+                                <h4 class="font-bold text-slate-800 text-[10px] line-clamp-2 px-1 mb-1">${title}</h4>
+                                <div class="mt-auto bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-[8px] space-y-0.5 font-bold">
+                                    <div class="flex justify-between"><span>טל:</span><span>${file.phone || "-"}</span></div>
+                                    <div class="flex justify-between border-t pt-0.5 text-blue-600"><span>אורך:</span><span>${file.durationStr || "-"}</span></div>
+                                </div>
+                            </div>
+                        `);
+                    });
                 }
-            } catch (e) { alert("שגיאה בטעינה"); }
-            finally { btn.disabled = false; btn.innerText = "טען קבצים"; }
+            } catch (e) {} finally { btn.disabled = false; btn.innerText = "טען קבצים"; }
         }
+
+        function changePage(dir) {
+            const input = document.getElementById('filesFromInput');
+            const limit = parseInt(document.getElementById('filesLimitInput').value);
+            let next = (parseInt(input.value) || 0) + (dir * limit);
+            input.value = Math.max(0, next);
+            fetchData();
+        }
+
+        function openModal(title, callback) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            document.getElementById('modalConfirmBtn').onclick = () => {
+                const t = document.getElementById('targetExtensionInput').value.trim();
+                if (t) { callback(t); closeModal(); }
+            };
+        }
+        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
     </script>
 </body>
 </html>
