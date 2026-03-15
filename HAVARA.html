@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ניהול שלוחות - הקו המרכזי</title>
+    <title>ניהול שלוחות - ממשק ניהול</title>
     <link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="translations.js"></script>
@@ -207,14 +207,28 @@
             justify-content: center;
             backdrop-filter: blur(2px);
         }
+
+        #processingOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.8);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Hidden Audio Player -->
     <audio id="globalAudioPlayer" class="hidden"></audio>
 
-    <!-- Modal -->
+    <div id="processingOverlay">
+        <div class="loader !w-12 !h-12 !border-blue-600 !border-t-transparent mb-4"></div>
+        <p class="font-bold text-blue-800" id="processingText">מעבד...</p>
+    </div>
+
     <div id="modalOverlay">
         <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-sm w-full shadow-2xl">
             <h3 id="modalTitle" class="text-lg font-bold text-slate-800 mb-3"></h3>
@@ -226,15 +240,26 @@
         </div>
     </div>
 
+    <div id="silenceModalOverlay" class="hidden fixed inset-0 bg-black/40 z-[100] items-center justify-center backdrop-blur-[2px]">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-sm w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">הסרת רווח מהקובץ</h3>
+            <p class="text-[10px] text-slate-500 mb-3">ציין את אורך השקט המקסימלי (לדוגמה 0.5)</p>
+            <input type="number" step="0.1" id="silenceLengthInput" value="0.5" placeholder="אורך שקט (שניות)" class="input-field text-center font-bold mb-4">
+            <div class="flex gap-2">
+                <button id="silenceConfirmBtn" class="flex-1 bg-orange-600 text-white py-2 rounded-xl font-bold hover:bg-orange-700">הורדה</button>
+                <button onclick="closeSilenceModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
     <div class="glass max-w-[98%] w-full rounded-[2.5rem] p-6 space-y-5 my-4">
         
         <div class="flex flex-col items-center">
-            <!-- לוגו עם קישור לדף הבית -->
             <a href="index.html" title="חזרה לדף הבית">
                 <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-14 h-14 rounded-full border-4 border-white shadow-lg mb-2 transition-transform hover:scale-105">
             </a>
             <h1 class="text-xl font-bold text-slate-800">ניהול קבצים</h1>
-            <p class="text-blue-600 font-bold tracking-wide uppercase text-[9px]">הקו המרכזי - פותח ע"י יצחק לרנר</p>
+            <p class="text-slate-500 font-bold tracking-wide uppercase text-[9px]">נבנה ופותח על ידי יצחק לרנר עבור הקו המרכזי </p>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white/40 p-4 rounded-3xl border border-white/50">
@@ -251,18 +276,17 @@
 
         <div id="resultsWrapper" class="hidden space-y-3">
             
-            <!-- Bulk Bar -->
             <div id="bulkActionsBar" class="flex items-center justify-between">
                 <div class="text-xs font-bold">נבחרו <span id="selectedCount">0</span> קבצים</div>
                 <div class="flex gap-2">
                     <button onclick="bulkDownload()" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">הורדה</button>
+                    <button onclick="bulkSilenceAction()" class="bg-white text-orange-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">הסרת רווח</button>
                     <button onclick="bulkAction('copy')" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">העתקה</button>
                     <button onclick="bulkAction('move')" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">העברה</button>
-                    <button onclick="bulkAction('delete')" class="bg-red-500 text-white px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">מחיקה</button>
+                    <button onclick="bulkAction('delete')" class="bg-white text-red-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">מחיקה</button>
                 </div>
             </div>
 
-            <!-- Toolbar -->
             <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/60 p-2.5 rounded-2xl border border-white/80 shadow-sm">
                 <div class="flex items-center gap-2 flex-1">
                     <button onclick="toggleSelectAll()" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg border border-blue-100 transition-colors hover:bg-blue-100">בחר הכל</button>
@@ -318,9 +342,8 @@
             } catch (e) {}
         }
 
-        // פונקציית נגינה משופרת
         function playFile(e, index) {
-            e.stopPropagation(); // מונע את בחירת הכרטיסייה
+            e.stopPropagation(); 
             const audio = document.getElementById('globalAudioPlayer');
             const file = currentFiles[index];
             const system = document.getElementById('systemNumber').value.trim();
@@ -338,9 +361,7 @@
                     updatePlayIcon(index, true);
                 }
             } else {
-                // עצירת קובץ קודם אם מתנגן
                 if (currentlyPlayingIndex !== null) updatePlayIcon(currentlyPlayingIndex, false);
-                
                 audio.src = fileUrl;
                 audio.play();
                 currentlyPlayingIndex = index;
@@ -397,9 +418,8 @@
         function toggleDropdown(e, index) {
             e.stopPropagation();
             const allDropdowns = document.querySelectorAll('.dropdown-menu');
-            allDropdowns.forEach((d, i) => {
-                const dropId = d.id.split('-')[1];
-                if(dropId != index) d.classList.remove('active');
+            allDropdowns.forEach((d) => {
+                if(d.id !== `dropdown-${index}`) d.classList.remove('active');
             });
             document.getElementById(`dropdown-${index}`).classList.toggle('active');
         }
@@ -408,24 +428,117 @@
             document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active'));
         });
 
-        async function singleAction(action, index) {
+        async function singleAction(e, action, index) {
+            e.preventDefault();
+            e.stopPropagation();
             const file = currentFiles[index];
-            if (action === 'delete' && !confirm(`למחוק את קובץ ${file.name}?`)) return;
+            document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active'));
             
-            if (action === 'download') {
-                downloadFile(index);
+            if (action === 'download') { downloadFile(index); return; }
+
+            if (action === 'removeSilence') {
+                openSilenceModal(async (silenceVal) => {
+                    await processAndDownloadWithSilence(index, parseFloat(silenceVal));
+                });
+                return;
+            }
+
+            if (action === 'delete') {
+                const result = await executeFileAction('delete', file.name);
+                if (result && result.responseStatus === 'OK') await fetchData();
+                else alert('המחיקה נכשלה');
                 return;
             }
 
             if (action === 'copy' || action === 'move') {
                 openModal(action === 'copy' ? 'העתקת קובץ' : 'העברת קובץ', async (target) => {
-                    await executeFileAction(action, file.name, target);
-                    fetchData();
+                    const result = await executeFileAction(action, file.name, target);
+                    if (result && result.responseStatus === 'OK') await fetchData();
+                    else alert('הפעולה נכשלה');
                 });
-            } else {
-                await executeFileAction(action, file.name);
-                fetchData();
+                return;
             }
+        }
+
+        async function processAndDownloadWithSilence(index, thresholdSec) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            const file = currentFiles[index];
+            const url = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
+            
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `מעבד את ${file.name}...`;
+
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                const processedBuffer = removeSilenceFromBuffer(audioBuffer, thresholdSec);
+                const wavBlob = bufferToWav(processedBuffer);
+                const downloadUrl = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = file.name.toLowerCase().endsWith('.wav') ? file.name : `${file.name.replace(/\.[^/.]+$/, "")}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
+            } catch (e) { alert('שגיאה בעיבוד הקובץ'); } 
+            finally { document.getElementById('processingOverlay').style.display = 'none'; }
+        }
+
+        function removeSilenceFromBuffer(buffer, thresholdSec) {
+            const sampleRate = buffer.sampleRate;
+            const threshold = 0.01; 
+            const minSilenceSamples = thresholdSec * sampleRate;
+            const channels = [];
+            for (let c = 0; c < buffer.numberOfChannels; c++) channels.push(buffer.getChannelData(c));
+            const length = buffer.length;
+            const keepIndices = [];
+            let silenceCounter = 0;
+            for (let i = 0; i < length; i++) {
+                let isSilence = true;
+                for (let c = 0; c < buffer.numberOfChannels; c++) {
+                    if (Math.abs(channels[c][i]) > threshold) { isSilence = false; break; }
+                }
+                if (isSilence) silenceCounter++;
+                else silenceCounter = 0;
+                if (silenceCounter < minSilenceSamples) keepIndices.push(i);
+            }
+            const newBuffer = new (window.AudioContext || window.webkitAudioContext)().createBuffer(buffer.numberOfChannels, keepIndices.length, sampleRate);
+            for (let c = 0; c < buffer.numberOfChannels; c++) {
+                const newData = newBuffer.getChannelData(c);
+                for (let i = 0; i < keepIndices.length; i++) newData[i] = channels[c][keepIndices[i]];
+            }
+            return newBuffer;
+        }
+
+        function bufferToWav(buffer) {
+            const numOfChan = buffer.numberOfChannels;
+            const length = buffer.length * numOfChan * 2 + 44;
+            const bufferArr = new ArrayBuffer(length);
+            const view = new DataView(bufferArr);
+            const channels = [];
+            let pos = 0;
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+            setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+            setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
+            for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+            let offset = 0;
+            while (pos < length) {
+                for (let i = 0; i < numOfChan; i++) {
+                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+                    view.setInt16(pos, sample, true); pos += 2;
+                }
+                offset++;
+            }
+            return new Blob([bufferArr], { type: 'audio/wav' });
         }
 
         function downloadFile(index) {
@@ -434,25 +547,25 @@
             const ext = document.getElementById('extension').value.trim();
             const file = currentFiles[index];
             const url = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
-            
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            const a = document.createElement('a'); a.href = url; a.download = file.name;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
         }
 
         async function bulkDownload() {
-            const sortedIndices = Array.from(selectedFiles).sort((a, b) => {
-                const numA = parseInt(currentFiles[a].name) || 0;
-                const numB = parseInt(currentFiles[b].name) || 0;
-                return numA - numB;
-            });
+            const sortedIndices = Array.from(selectedFiles).sort((a, b) => a - b);
             for (const idx of sortedIndices) {
                 downloadFile(idx);
-                await new Promise(r => setTimeout(r, 400));
+                await new Promise(r => setTimeout(r, 500));
             }
+        }
+
+        function bulkSilenceAction() {
+            openSilenceModal(async (silenceVal) => {
+                const sortedIndices = Array.from(selectedFiles).sort((a, b) => a - b);
+                for (const idx of sortedIndices) {
+                    await processAndDownloadWithSilence(idx, parseFloat(silenceVal));
+                }
+            });
         }
 
         async function executeFileAction(action, fileName, target = null) {
@@ -461,29 +574,42 @@
             const ext = document.getElementById('extension').value.trim();
             let url = `https://www.call2all.co.il/ym/api/FileAction?token=${system}:${pass}&action=${action}&what=ivr2:/${ext}/${fileName}`;
             if (target) url += `&target=ivr2:/${target}`;
-            try { await fetch(url); } catch (e) {}
+            try { 
+                const response = await fetch(url);
+                return await response.json();
+            } catch (e) { return null; }
         }
 
         async function bulkAction(action) {
-            if (action === 'delete' && !confirm(`למחוק ${selectedFiles.size} קבצים?`)) return;
+            if (selectedFiles.size === 0) return;
+
             if (action === 'copy' || action === 'move') {
-                openModal(action === 'copy' ? 'העתקה קבוצתית' : 'העברה קבוצתית', (target) => runBulkSequence(action, target));
+                openModal(action === 'copy' ? 'העתקה קבוצתית' : 'העברה קבוצתית', async (target) => {
+                    await runBulkSequence(action, target);
+                });
             } else {
-                runBulkSequence(action);
+                await runBulkSequence(action);
             }
         }
 
         async function runBulkSequence(action, target = null) {
-            const sortedIndices = Array.from(selectedFiles).sort((a, b) => {
-                const numA = parseInt(currentFiles[a].name) || 0;
-                const numB = parseInt(currentFiles[b].name) || 0;
-                return numA - numB;
-            });
-            for (const idx of sortedIndices) {
-                await executeFileAction(action, currentFiles[idx].name, target);
-                await new Promise(r => setTimeout(r, 150));
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = 'מבצע פעולות...';
+            
+            const indices = Array.from(selectedFiles);
+            for (let i = 0; i < indices.length; i++) {
+                const idx = indices[i];
+                const file = currentFiles[idx];
+                document.getElementById('processingText').innerText = `מבצע ${i+1}/${indices.length}: ${file.name}`;
+                
+                await executeFileAction(action, file.name, target);
+                await new Promise(r => setTimeout(r, 200));
             }
-            fetchData();
+            
+            selectedFiles.clear();
+            updateBulkBar();
+            document.getElementById('processingOverlay').style.display = 'none';
+            await fetchData();
         }
 
         async function fetchData() {
@@ -492,7 +618,6 @@
             const ext = document.getElementById('extension').value.trim();
             const from = document.getElementById('filesFromInput').value || 0;
             const limit = document.getElementById('filesLimitInput').value || 25;
-            
             const btn = document.getElementById('mainBtn');
             const grid = document.getElementById('fileGrid');
 
@@ -531,18 +656,16 @@
                         grid.insertAdjacentHTML('beforeend', `
                             <div id="card-${i}" class="file-card shadow-sm" onclick="toggleFile(${i})">
                                 <div class="file-badge">${num}</div>
-                                
                                 <button class="options-btn" onclick="toggleDropdown(event, ${i})">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                                 </button>
-
                                 <div id="dropdown-${i}" class="dropdown-menu">
-                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('download', ${i})">הורדה</div>
-                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('copy', ${i})">העתקה</div>
-                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('move', ${i})">העברה</div>
-                                    <div class="dropdown-item" onclick="event.stopPropagation(); singleAction('delete', ${i})">מחיקה</div>
+                                    <div class="dropdown-item" onclick="singleAction(event, 'download', ${i})">הורדה</div>
+                                    <div class="dropdown-item" onclick="singleAction(event, 'removeSilence', ${i})">הסרת רווח</div>
+                                    <div class="dropdown-item" onclick="singleAction(event, 'copy', ${i})">העתקה</div>
+                                    <div class="dropdown-item" onclick="singleAction(event, 'move', ${i})">העברה</div>
+                                    <div class="dropdown-item text-red-600 font-bold" onclick="singleAction(event, 'delete', ${i})">מחיקה</div>
                                 </div>
-
                                 <div class="mt-6 mb-2 flex items-center justify-center">
                                     <button class="play-btn" onclick="playFile(event, ${i})">
                                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
@@ -577,6 +700,18 @@
             };
         }
         function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+        function openSilenceModal(callback) {
+            const modal = document.getElementById('silenceModalOverlay');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('silenceConfirmBtn').onclick = () => {
+                const val = document.getElementById('silenceLengthInput').value.trim();
+                if (val) { callback(val); closeSilenceModal(); }
+            };
+        }
+        function closeSilenceModal() {
+            const modal = document.getElementById('silenceModalOverlay');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+        }
     </script>
 </body>
 </html>
