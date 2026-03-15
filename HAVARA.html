@@ -49,12 +49,14 @@
         .file-card {
             background: white;
             border-radius: 1.5rem;
-            padding: 1.5rem;
+            padding: 1.25rem;
             transition: all 0.3s ease;
             border: 1px solid #edf2f7;
             display: flex;
             flex-direction: column;
             text-align: center;
+            height: 100%;
+            position: relative;
         }
 
         .file-card:hover {
@@ -76,62 +78,232 @@
             background-color: #cbd5e0;
             border-radius: 10px;
         }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .file-badge {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            background: #f1f5f9;
+            color: #64748b;
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.6rem;
+            border: 1px solid #e2e8f0;
+            z-index: 10;
+        }
+
+        .menu-container {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            z-index: 20;
+        }
+
+        .menu-btn {
+            padding: 0.4rem;
+            border-radius: 0.6rem;
+            color: #94a3b8;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+        }
+
+        .menu-btn:hover {
+            background: #f8fafc;
+            color: #3b82f6;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            min-width: 140px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .dropdown-menu.active {
+            display: block;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.8rem;
+            color: #475569;
+            width: 100%;
+            text-align: right;
+            transition: background 0.2s;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+        .dropdown-item:hover {
+            background: #f1f5f9;
+            color: #2563eb;
+        }
+
+        .dropdown-item.text-red-600:hover {
+            background: #fef2f2;
+            color: #dc2626;
+        }
+
+        .play-btn {
+            background: #3b82f6;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.3);
+            cursor: pointer;
+        }
+
+        .play-btn:hover {
+            background: #2563eb;
+            transform: scale(1.1);
+        }
+
+        .audio-player-container {
+            display: none;
+            margin-top: 8px;
+            width: 100%;
+        }
+
+        .audio-player-container.active {
+            display: block;
+        }
+
+        audio {
+            width: 100%;
+            height: 30px;
+            border-radius: 8px;
+        }
+
+        /* Modal Styling */
+        #modalOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 1.5rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
 
-    <div class="glass max-w-5xl w-full rounded-[2.5rem] p-6 md:p-10 space-y-6">
+    <!-- Modal for Target Extension -->
+    <div id="modalOverlay">
+        <div class="modal-content text-center">
+            <h3 id="modalTitle" class="text-xl font-bold text-slate-800 mb-4">בחר שלוחת יעד</h3>
+            <input type="text" id="targetExtensionInput" placeholder="לדוגמה: 1/2" class="input-field text-center font-bold mb-6">
+            <div class="flex gap-3">
+                <button id="modalConfirmBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-xl font-bold hover:bg-blue-700">בצע</button>
+                <button onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass max-w-[95%] w-full rounded-[2.5rem] p-6 md:p-10 space-y-6 my-8">
         
         <!-- Header -->
         <div class="flex flex-col items-center">
-            <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-24 h-24 rounded-full border-4 border-white shadow-xl mb-4">
+            <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-20 h-20 rounded-full border-4 border-white shadow-xl mb-4">
             <h1 class="text-3xl font-bold text-slate-800">ניהול קבצים</h1>
-            <p class="text-blue-600 font-bold tracking-wide uppercase text-xs">הקו המרכזי - לוח בקרה</p>
+            <p class="text-blue-600 font-bold tracking-wide uppercase text-xs">ניהול קבצים - פותח על ידי יצחק לרנר</p>
         </div>
 
         <!-- Form Section -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-white/40 p-5 rounded-3xl border border-white/50">
             <div>
                 <label class="block text-xs font-bold text-slate-500 mb-1.5 px-1">מספר מערכת</label>
-                <input type="text" id="systemNumber" value="033137787" class="input-field text-center font-bold">
+                <input type="text" id="systemNumber" value="033137787" class="input-field text-center font-bold text-sm">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 mb-1.5 px-1">סיסמה</label>
-                <input type="password" id="password" value="8549052" class="input-field text-center font-bold">
+                <input type="password" id="password" value="8549052" class="input-field text-center font-bold text-sm">
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-500 mb-1.5 px-1">שלוחה</label>
-                <input type="text" id="extension" value="6/7" class="input-field text-center font-bold">
+                <input type="text" id="extension" value="6/7" class="input-field text-center font-bold text-sm">
             </div>
         </div>
 
-        <button onclick="fetchData()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition-all active:scale-95 text-lg">
-            טען נתונים מהמערכת
+        <button onclick="fetchData()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-2xl shadow-lg transition-all active:scale-95 text-lg flex items-center justify-center gap-2">
+            <span>טען נתונים מהמערכת</span>
         </button>
 
         <!-- Stats & Results Section -->
         <div id="resultsWrapper" class="hidden space-y-4">
             <div class="flex justify-between items-center px-2">
-                <h3 class="font-bold text-slate-700 flex items-center gap-2">
+                <h3 class="font-bold text-slate-700 flex items-center gap-2 text-sm md:text-base">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
                     </svg>
                     קבצים בשלוחה
                 </h3>
-                <span id="fileCount" class="bg-blue-100 text-blue-700 text-sm font-bold px-4 py-1.5 rounded-full shadow-sm border border-blue-200">
+                <span id="fileCount" class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-blue-200">
                     סה"כ: 0 קבצים
                 </span>
             </div>
 
             <div class="results-container">
-                <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
+                <!-- Modified Grid: 1 col mobile, 2 col sm, 3 col md, 5 col lg -->
+                <div id="fileGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-4">
                     <!-- Cards will be injected here -->
                 </div>
             </div>
         </div>
 
         <div class="text-center pt-4 border-t border-white/20">
-            <p class="text-[11px] text-slate-400 font-medium">© פותח עבור הקו המרכזי | API ימות המשיח</p>
+            <p class="text-[11px] text-slate-400 font-medium">© פותח על ידי יצחק לרנר עבור הקו המרכזי </p>
         </div>
     </div>
 
@@ -139,9 +311,79 @@
         const CONTACTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkWP3PGv8y7-gfW6lG6mPy7P7gVrKIlBw6qcyjaqdM46cP60OVZO_8lDb28t6I-zGV9bIdiF-m3ApD/pub?gid=0&single=true&output=csv";
         let contactsMap = new Map();
 
-        // Remove file extension from string
+        // Modal Logic
+        function openModal(title, callback) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            document.getElementById('targetExtensionInput').value = "";
+            document.getElementById('targetExtensionInput').focus();
+            document.getElementById('modalConfirmBtn').onclick = () => {
+                const target = document.getElementById('targetExtensionInput').value.trim();
+                if (target) {
+                    callback(target);
+                    closeModal();
+                } else {
+                    alert("נא להזין מספר שלוחה");
+                }
+            };
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').style.display = 'none';
+        }
+
+        // Close dropdowns when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!e.target.closest('.menu-container')) {
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+            }
+        });
+
+        function toggleMenu(e, fileId) {
+            e.stopPropagation();
+            const menu = document.getElementById(`menu-${fileId}`);
+            const isActive = menu.classList.contains('active');
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('active'));
+            if (!isActive) menu.classList.add('active');
+        }
+
+        function togglePlayer(index) {
+            const playerContainer = document.getElementById(`player-container-${index}`);
+            const isVisible = playerContainer.classList.contains('active');
+            document.querySelectorAll('.audio-player-container').forEach(p => p.classList.remove('active'));
+            if (!isVisible) {
+                playerContainer.classList.add('active');
+                const audio = playerContainer.querySelector('audio');
+                audio.play();
+            }
+        }
+
         function stripExtension(filename) {
+            if (!filename) return "";
             return filename.replace(/\.[^/.]+$/, "");
+        }
+
+        // API ACTIONS
+        async function performAction(action, fileName, target = null) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            
+            let url = `https://www.call2all.co.il/ym/api/FileAction?token=${system}:${pass}&action=${action}&what=ivr2:/${ext}/${fileName}`;
+            if (target) url += `&target=ivr2:/${target}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.responseStatus === "OK") {
+                    alert("הפעולה בוצעה בהצלחה!");
+                    fetchData(); // Refresh list
+                } else {
+                    alert("שגיאה: " + (data.message || "לא ניתן לבצע את הפעולה"));
+                }
+            } catch (error) {
+                alert("שגיאת תקשורת");
+            }
         }
 
         async function loadContacts() {
@@ -149,17 +391,13 @@
                 const response = await fetch(CONTACTS_URL);
                 const csvText = await response.text();
                 const lines = csvText.split('\n');
-                
                 contactsMap.clear();
-                
                 lines.forEach(line => {
                     const columns = line.split(',');
                     if (columns.length >= 4) {
                         const phone = columns[0].trim().replace(/[^0-9]/g, '');
                         const name = columns[3].trim();
-                        if (phone && name) {
-                            contactsMap.set(phone, name);
-                        }
+                        if (phone && name) contactsMap.set(phone, name);
                     }
                 });
             } catch (error) {
@@ -176,13 +414,11 @@
             const grid = document.getElementById('fileGrid');
             const countLabel = document.getElementById('fileCount');
 
-            if (!system || !pass || !ext) {
-                alert("נא למלא את כל השדות");
-                return;
-            }
+            if (!system || !pass || !ext) return;
 
             btn.disabled = true;
-            btn.innerHTML = `טוען נתונים...`;
+            btn.innerHTML = `<span class="loader"></span> טוען...`;
+            grid.innerHTML = "";
 
             await loadContacts();
             
@@ -193,83 +429,98 @@
                 const data = await response.json();
 
                 if (data.responseStatus === "OK") {
-                    grid.innerHTML = "";
                     wrapper.classList.remove('hidden');
-
                     if (data.files && data.files.length > 0) {
                         countLabel.innerText = `סה"כ: ${data.files.length} קבצים`;
-                        
-                        data.files.forEach(file => {
+                        data.files.forEach((file, index) => {
                             const phone = file.phone ? file.phone.trim() : "";
                             const cleanPhone = phone.replace(/[^0-9]/g, '');
+                            const fileNumber = stripExtension(file.name);
+                            const fileFullName = file.name;
                             
-                            let title = "";
-                            if (contactsMap.has(cleanPhone)) {
-                                title = contactsMap.get(cleanPhone);
-                            } else if (file.meta && file.meta.title) {
-                                title = stripExtension(file.meta.title);
-                            } else {
-                                title = stripExtension(file.name);
-                            }
+                            let title = contactsMap.has(cleanPhone) ? contactsMap.get(cleanPhone) : (file.meta?.title ? stripExtension(file.meta.title) : fileNumber);
 
-                            const displayPhone = phone || "לא זמין";
-                            const time = file.date || file.mtime || "---";
+                            const downloadLink = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${fileFullName}`;
                             const duration = file.durationStr || "--:--";
                             
                             const card = `
-                                <div class="file-card shadow-md">
-                                    <div class="flex justify-center mb-2">
-                                        <div class="bg-blue-100 p-3 rounded-2xl">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                                <div class="file-card shadow-sm">
+                                    <div class="menu-container">
+                                        <button onclick="toggleMenu(event, ${index})" class="menu-btn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                                             </svg>
+                                        </button>
+                                        <div id="menu-${index}" class="dropdown-menu">
+                                            <a href="${downloadLink}" target="_blank" class="dropdown-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                </svg> הורדה
+                                            </a>
+                                            <button onclick="openModal('העתקת קובץ ${fileNumber}', (t) => performAction('copy', '${fileFullName}', t))" class="dropdown-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                                </svg> העתקה
+                                            </button>
+                                            <button onclick="openModal('העברת קובץ ${fileNumber}', (t) => performAction('move', '${fileFullName}', t))" class="dropdown-item">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                                                </svg> העברה
+                                            </button>
+                                            <button onclick="if(confirm('למחוק את הקובץ?')) performAction('delete', '${fileFullName}')" class="dropdown-item text-red-600">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg> מחיקה
+                                            </button>
                                         </div>
-                                    </div>
-                                    
-                                    <div class="flex-grow flex items-center justify-center py-4">
-                                        <h4 class="font-extrabold text-slate-900 text-xl leading-tight" title="${title}">
-                                            ${title}
-                                        </h4>
                                     </div>
 
-                                    <div class="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                        <div class="flex justify-between items-center text-xs">
-                                            <span class="text-slate-400 font-bold">טלפון:</span>
-                                            <span class="text-slate-700 font-bold">${displayPhone}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center text-xs">
-                                            <span class="text-slate-400 font-bold">תאריך:</span>
-                                            <span class="text-slate-600">${time}</span>
-                                        </div>
-                                        <div class="flex justify-between items-center pt-2 border-t border-slate-200">
-                                            <span class="text-[10px] font-black uppercase text-blue-400 tracking-tighter italic">אורך הקלטה</span>
-                                            <span class="text-sm font-black text-blue-700">${duration}</span>
+                                    <div class="file-badge">${fileNumber}</div>
+
+                                    <div class="flex flex-col items-center justify-center mb-2 mt-4 space-y-3">
+                                        <button onclick="togglePlayer(${index})" class="play-btn">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                                <path d="M8 5v14l11-7z" />
+                                            </svg>
+                                        </button>
+                                        <div id="player-container-${index}" class="audio-player-container">
+                                            <audio controls preload="none"><source src="${downloadLink}" type="audio/wav"></audio>
                                         </div>
                                     </div>
                                     
-                                    <div class="mt-3 text-[9px] text-slate-300 font-mono">
-                                        קובץ: ${file.name}
+                                    <div class="flex-grow flex items-center justify-center py-2">
+                                        <h4 class="font-bold text-slate-900 text-sm md:text-base leading-tight">${title}</h4>
+                                    </div>
+
+                                    <div class="space-y-1.5 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                                        <div class="flex justify-between items-center text-[10px]">
+                                            <span class="text-slate-400 font-bold">טלפון:</span>
+                                            <span class="text-slate-700 font-bold">${phone || "---"}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center text-[10px]">
+                                            <span class="text-slate-400 font-bold">תאריך:</span>
+                                            <span class="text-slate-600">${file.date || "---"}</span>
+                                        </div>
+                                        <div class="flex justify-between items-center pt-1.5 border-t border-slate-200">
+                                            <span class="text-[9px] font-black uppercase text-blue-400 italic">אורך</span>
+                                            <span class="text-xs font-black text-blue-700">${duration}</span>
+                                        </div>
                                     </div>
                                 </div>
                             `;
-                            grid.innerHTML += card;
+                            grid.insertAdjacentHTML('beforeend', card);
                         });
                     } else {
-                        countLabel.innerText = `סה"כ: 0 קבצים`;
-                        grid.innerHTML = "<div class='col-span-full p-12 text-center text-slate-400 italic font-bold'>אין קבצים בשלוחה זו</div>";
+                        grid.innerHTML = "<div class='col-span-full p-12 text-center text-slate-400 italic font-bold'>אין קבצים</div>";
                     }
-                } else {
-                    alert("שגיאה: " + (data.message || "לא ניתן למשוך נתונים"));
                 }
             } catch (error) {
-                console.error(error);
-                alert("שגיאת חיבור לשרת ימות המשיח");
+                alert("שגיאת חיבור");
             } finally {
                 btn.disabled = false;
                 btn.innerText = "טען נתונים מהמערכת";
             }
         }
     </script>
-
 </body>
 </html>
