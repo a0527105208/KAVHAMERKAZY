@@ -483,7 +483,7 @@
             try {
                 const response = await fetch(url);
                 const arrayBuffer = await response.arrayBuffer();
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                 const processedBuffer = removeSilenceFromBuffer(audioBuffer, thresholdSec);
                 const wavBlob = bufferToWav(processedBuffer);
@@ -510,7 +510,6 @@
             return `${baseName}.wav`;
         }
 
-        // פונקציית העלאה מעודכנת לפי דרישות מספור אוטומטי
         async function processAndUploadWithSilence(index, thresholdSec, targetExt) {
             const system = document.getElementById('systemNumber').value.trim();
             const pass = document.getElementById('password').value.trim();
@@ -526,7 +525,7 @@
             try {
                 const response = await fetch(downloadUrl);
                 const arrayBuffer = await response.arrayBuffer();
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                 
                 const processedBuffer = removeSilenceFromBuffer(audioBuffer, thresholdSec);
@@ -535,16 +534,12 @@
                 const formData = new FormData();
                 formData.append('token', `${system}:${pass}`);
                 
-                // שינוי 1: הנתיב מסתיים בסלאש (/) ללא שם קובץ
                 const cleanTargetExt = targetExt.startsWith('/') ? targetExt : `/${targetExt}`;
                 const finalPath = `ivr2:${cleanTargetExt}${cleanTargetExt.endsWith('/') ? '' : '/'}`;
                 formData.append('path', finalPath);
                 
-                // שינוי 2: הוספת פרמטר מספור אוטומטי
                 formData.append('autoNumbering', '1');
-                
                 formData.append('convertAudio', '1');
-                // השם ב-qqfile נשלח כדי שהמערכת תקרא אותו ותציג בניהול
                 formData.append('qqfile', wavBlob, displayedName);
 
                 const uploadResponse = await fetch('https://www.call2all.co.il/ym/api/UploadFile', {
@@ -585,7 +580,8 @@
                 else silenceCounter = 0;
                 if (silenceCounter < minSilenceSamples) keepIndices.push(i);
             }
-            const newBuffer = new (window.AudioContext || window.webkitAudioContext)().createBuffer(buffer.numberOfChannels, keepIndices.length, sampleRate);
+            // יצירת Buffer חדש בקצב דגימה של 8000Hz
+            const newBuffer = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 }).createBuffer(buffer.numberOfChannels, keepIndices.length, 8000);
             for (let c = 0; c < buffer.numberOfChannels; c++) {
                 const newData = newBuffer.getChannelData(c);
                 for (let i = 0; i < keepIndices.length; i++) newData[i] = channels[c][keepIndices[i]];
@@ -595,6 +591,7 @@
 
         function bufferToWav(buffer) {
             const numOfChan = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
             const length = buffer.length * numOfChan * 2 + 44;
             const bufferArr = new ArrayBuffer(length);
             const view = new DataView(bufferArr);
@@ -604,7 +601,7 @@
             function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
             setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
             setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
-            setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numOfChan);
+            setUint32(sampleRate); setUint32(sampleRate * 2 * numOfChan);
             setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
             for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
             let offset = 0;
