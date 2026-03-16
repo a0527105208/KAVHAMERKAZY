@@ -218,6 +218,25 @@
             align-items: center;
             justify-content: center;
         }
+
+        .dir-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 60px;
+        }
+        .dir-card:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -286,8 +305,14 @@
         <input type="hidden" id="filesFromInput" value="0">
 
         <button onclick="fetchData()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-2xl shadow-md transition-all active:scale-95 text-sm flex items-center justify-center gap-2">
-            <span>טען קבצים</span>
+            <span>טען שלוחה</span>
         </button>
+
+        <!-- שדה שלוחות פנימיות - ממוקם בין 3 ל-4 -->
+        <div id="subDirsWrapper" class="hidden space-y-2 border-y border-slate-100 py-3">
+            <h3 class="text-[10px] font-bold text-slate-400 px-2 uppercase tracking-wider text-right">שלוחות פנימיות</h3>
+            <div id="subDirsGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
+        </div>
 
         <div id="resultsWrapper" class="hidden space-y-3">
             
@@ -589,7 +614,6 @@
                 else silenceCounter = 0;
                 if (silenceCounter < minSilenceSamples) keepIndices.push(i);
             }
-            // יצירת Buffer חדש בקצב דגימה של 8000Hz
             const newBuffer = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 }).createBuffer(buffer.numberOfChannels, keepIndices.length, 8000);
             for (let c = 0; c < buffer.numberOfChannels; c++) {
                 const newData = newBuffer.getChannelData(c);
@@ -709,6 +733,8 @@
             const limit = document.getElementById('filesLimitInput').value || 25;
             const btn = document.getElementById('mainBtn');
             const grid = document.getElementById('fileGrid');
+            const subDirsWrapper = document.getElementById('subDirsWrapper');
+            const subDirsGrid = document.getElementById('subDirsGrid');
 
             btn.disabled = true;
             btn.innerHTML = `<span class="loader"></span>`;
@@ -724,6 +750,27 @@
                     grid.innerHTML = "";
                     selectedFiles.clear();
                     updateBulkBar();
+
+                    // הצגת שלוחות פנימיות
+                    subDirsGrid.innerHTML = "";
+                    if (data.dirs && data.dirs.length > 0) {
+                        subDirsWrapper.classList.remove('hidden');
+                        data.dirs.forEach(dir => {
+                            const translatedType = (typeof extensionTypeTranslations !== 'undefined') 
+                                ? (extensionTypeTranslations[dir.extType] || dir.extType || "תיקייה")
+                                : (dir.extType || "תיקייה");
+
+                            subDirsGrid.insertAdjacentHTML('beforeend', `
+                                <div onclick="navigateToDir('${dir.path}')" class="dir-card">
+                                    <span class="text-[9px] font-extrabold text-blue-600">${dir.name}</span>
+                                    <span class="text-[10px] font-bold text-slate-800 line-clamp-1 px-1">${dir.extTitle || 'ללא כותרת'}</span>
+                                    <span class="text-[8px] text-slate-400 font-bold">${translatedType}</span>
+                                </div>
+                            `);
+                        });
+                    } else {
+                        subDirsWrapper.classList.add('hidden');
+                    }
 
                     if (data.extIni) {
                         document.getElementById('extTitle').innerText = data.extIni.title || "שלוחה ללא שם";
@@ -769,7 +816,15 @@
                         `);
                     });
                 }
-            } catch (e) {} finally { btn.disabled = false; btn.innerText = "טען קבצים"; }
+            } catch (e) {} finally { btn.disabled = false; btn.innerText = "טען שלוחה"; }
+        }
+
+        function navigateToDir(path) {
+            // הסרת הקידומת ivr2:/ כדי לעדכן את השדה ולטעון
+            const cleanPath = path.replace('ivr2:/', '');
+            document.getElementById('extension').value = cleanPath;
+            document.getElementById('filesFromInput').value = 0;
+            fetchData();
         }
 
         function changePage(dir) {
