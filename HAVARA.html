@@ -194,7 +194,7 @@
             background: #2563eb;
         }
 
-        #modalOverlay {
+        #modalOverlay, #subDirsModalOverlay {
             display: none;
             position: fixed;
             top: 0;
@@ -230,7 +230,7 @@
             display: flex;
             flex-direction: column;
             justify-content: center;
-            min-height: 60px;
+            min-height: 70px;
         }
         .dir-card:hover {
             background: #f8fafc;
@@ -255,6 +255,31 @@
             <div class="flex gap-2">
                 <button id="modalConfirmBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-xl font-bold hover:bg-blue-700">אישור</button>
                 <button onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- חלונית שלוחות פנימיות -->
+    <div id="subDirsModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] max-w-2xl w-full shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <!-- לחצן חזרה אחורה עם חץ מתעגל -->
+                    <button onclick="goUpOneLevel()" class="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" title="חזרה לשלוחה מעל">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l5-5m-5 5l5 5"/>
+                        </svg>
+                    </button>
+                    <h3 class="text-lg font-bold text-slate-800">שלוחות פנימיות</h3>
+                </div>
+                <button onclick="closeSubDirsModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="subDirsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto p-1"></div>
+            <div id="noSubDirsMsg" class="hidden text-center py-10 text-slate-400 font-bold">אין שלוחות פנימיות להצגה</div>
+            <div class="mt-4 flex justify-center">
+                <button onclick="closeSubDirsModal()" class="bg-slate-100 text-slate-600 px-8 py-2 rounded-xl font-bold hover:bg-slate-200">סגור</button>
             </div>
         </div>
     </div>
@@ -308,12 +333,6 @@
             <span>טען שלוחה</span>
         </button>
 
-        <!-- שדה שלוחות פנימיות - ממוקם בין 3 ל-4 -->
-        <div id="subDirsWrapper" class="hidden space-y-2 border-y border-slate-100 py-3">
-            <h3 class="text-[10px] font-bold text-slate-400 px-2 uppercase tracking-wider text-right">שלוחות פנימיות</h3>
-            <div id="subDirsGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2"></div>
-        </div>
-
         <div id="resultsWrapper" class="hidden space-y-3">
             
             <div id="bulkActionsBar" class="flex items-center justify-between">
@@ -334,9 +353,17 @@
                     <span id="fileCount" class="text-[10px] text-blue-600 font-extrabold bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">0</span>
                 </div>
 
-                <div id="centerExtInfo" class="flex flex-col items-center justify-center flex-1 text-center">
-                    <span id="extTitle" class="font-extrabold text-blue-800 text-xs"></span>
-                    <span id="extType" class="text-slate-500 font-bold text-[9px] opacity-75"></span>
+                <!-- חלונית המידע המרכזית -->
+                <div id="centerExtInfo" class="grid grid-cols-[1fr_auto] items-center gap-4 flex-1 text-center bg-white/40 px-4 py-1 rounded-2xl border border-white/40 min-w-[150px]">
+                    <div class="flex flex-col">
+                        <span id="extTitle" class="font-extrabold text-blue-800 text-xs"></span>
+                        <span id="extType" class="text-slate-500 font-bold text-[9px] opacity-75"></span>
+                    </div>
+                    <!-- כפתור ניווט לשלוחות פנימיות - שם הכפתור "ניווט" -->
+                    <button id="subDirsNavBtn" onclick="openSubDirsModal()" class="flex items-center gap-1 text-[9px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50/50 px-3 py-1 rounded-full border border-blue-100 transition-all hover:bg-blue-100">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        ניווט
+                    </button>
                 </div>
 
                 <div class="flex items-center gap-2 flex-1 justify-end">
@@ -733,8 +760,8 @@
             const limit = document.getElementById('filesLimitInput').value || 25;
             const btn = document.getElementById('mainBtn');
             const grid = document.getElementById('fileGrid');
-            const subDirsWrapper = document.getElementById('subDirsWrapper');
             const subDirsGrid = document.getElementById('subDirsGrid');
+            const noSubDirsMsg = document.getElementById('noSubDirsMsg');
 
             btn.disabled = true;
             btn.innerHTML = `<span class="loader"></span>`;
@@ -751,29 +778,32 @@
                     selectedFiles.clear();
                     updateBulkBar();
 
-                    // הצגת שלוחות פנימיות
                     subDirsGrid.innerHTML = "";
                     if (data.dirs && data.dirs.length > 0) {
-                        subDirsWrapper.classList.remove('hidden');
+                        noSubDirsMsg.classList.add('hidden');
                         data.dirs.forEach(dir => {
                             const translatedType = (typeof extensionTypeTranslations !== 'undefined') 
                                 ? (extensionTypeTranslations[dir.extType] || dir.extType || "תיקייה")
                                 : (dir.extType || "תיקייה");
 
+                            const isNumericName = /^\d+$/.test(dir.name);
+                            const nameStyle = isNumericName ? 'text-[36px] font-extrabold' : 'text-[9px] font-extrabold';
+                            const safeTitle = dir.extTitle || "";
+
                             subDirsGrid.insertAdjacentHTML('beforeend', `
                                 <div onclick="navigateToDir('${dir.path}')" class="dir-card">
-                                    <span class="text-[9px] font-extrabold text-blue-600">${dir.name}</span>
-                                    <span class="text-[10px] font-bold text-slate-800 line-clamp-1 px-1">${dir.extTitle || 'ללא כותרת'}</span>
+                                    <span class="${nameStyle} text-blue-600">${dir.name}</span>
+                                    <span class="text-[10px] font-bold text-slate-800 line-clamp-1 px-1">${safeTitle}</span>
                                     <span class="text-[8px] text-slate-400 font-bold">${translatedType}</span>
                                 </div>
                             `);
                         });
                     } else {
-                        subDirsWrapper.classList.add('hidden');
+                        noSubDirsMsg.classList.remove('hidden');
                     }
 
                     if (data.extIni) {
-                        document.getElementById('extTitle').innerText = data.extIni.title || "שלוחה ללא שם";
+                        document.getElementById('extTitle').innerText = data.extIni.title || "";
                         const typeLabel = (typeof extensionTypeTranslations !== 'undefined') 
                             ? (extensionTypeTranslations[data.extIni.type] || data.extIni.type || "כללי")
                             : (data.extIni.type || "כללי");
@@ -820,11 +850,31 @@
         }
 
         function navigateToDir(path) {
-            // הסרת הקידומת ivr2:/ כדי לעדכן את השדה ולטעון
             const cleanPath = path.replace('ivr2:/', '');
             document.getElementById('extension').value = cleanPath;
             document.getElementById('filesFromInput').value = 0;
+            closeSubDirsModal();
             fetchData();
+        }
+
+        function goUpOneLevel() {
+            let currentPath = document.getElementById('extension').value.trim();
+            if (currentPath.endsWith('/')) currentPath = currentPath.slice(0, -1);
+            
+            const parts = currentPath.split('/');
+            if (parts.length > 1) {
+                parts.pop();
+                const newPath = parts.join('/');
+                document.getElementById('extension').value = newPath;
+                document.getElementById('filesFromInput').value = 0;
+                closeSubDirsModal();
+                fetchData();
+            } else if (currentPath !== "") {
+                document.getElementById('extension').value = "";
+                document.getElementById('filesFromInput').value = 0;
+                closeSubDirsModal();
+                fetchData();
+            }
         }
 
         function changePage(dir) {
@@ -845,6 +895,13 @@
         }
         function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
         
+        function openSubDirsModal() {
+            document.getElementById('subDirsModalOverlay').style.display = 'flex';
+        }
+        function closeSubDirsModal() {
+            document.getElementById('subDirsModalOverlay').style.display = 'none';
+        }
+
         function openSilenceModal(callback) {
             const modal = document.getElementById('silenceModalOverlay');
             modal.classList.remove('hidden'); modal.classList.add('flex');
