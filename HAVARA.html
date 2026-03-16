@@ -243,9 +243,18 @@
     <div id="silenceModalOverlay" class="hidden fixed inset-0 bg-black/40 z-[100] items-center justify-center backdrop-blur-[2px]">
         <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-sm w-full shadow-2xl">
             <h3 class="text-lg font-bold text-slate-800 mb-3">הסרת רווח מהקובץ</h3>
-            <p class="text-[10px] text-slate-500 mb-3">ציין אורך שקט (שניות) ושלוחת יעד להעלאה</p>
+            <p class="text-[10px] text-slate-500 mb-3">ציין אורך שקט, סף שקט ושלוחת יעד להעלאה</p>
             <div class="space-y-3">
-                <input type="number" step="0.1" id="silenceLengthInput" value="0.5" placeholder="אורך שקט (שניות)" class="input-field text-center font-bold">
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">אורך שקט (שניות)</label>
+                        <input type="number" step="0.1" id="silenceLengthInput" value="0.5" placeholder="שניות" class="input-field text-center font-bold !py-1.5">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">סף שקט (אחוז)</label>
+                        <input type="number" step="0.1" id="silenceThresholdInput" value="1" placeholder="אחוז" class="input-field text-center font-bold !py-1.5">
+                    </div>
+                </div>
                 <input type="text" id="uploadTargetInput" placeholder="שלוחת יעד (למשל: 5)" class="input-field text-center font-bold">
             </div>
             <div class="flex flex-col gap-2 mt-4">
@@ -443,11 +452,12 @@
             if (action === 'download') { downloadFile(index); return; }
 
             if (action === 'removeSilence') {
-                openSilenceModal(async (silenceVal, uploadPath) => {
+                openSilenceModal(async (silenceVal, thresholdVal, uploadPath) => {
+                    const threshold = parseFloat(thresholdVal) / 100;
                     if (uploadPath) {
-                        await processAndUploadWithSilence(index, parseFloat(silenceVal), uploadPath);
+                        await processAndUploadWithSilence(index, parseFloat(silenceVal), threshold, uploadPath);
                     } else {
-                        await processAndDownloadWithSilence(index, parseFloat(silenceVal));
+                        await processAndDownloadWithSilence(index, parseFloat(silenceVal), threshold);
                     }
                 });
                 return;
@@ -470,7 +480,7 @@
             }
         }
 
-        async function processAndDownloadWithSilence(index, thresholdSec) {
+        async function processAndDownloadWithSilence(index, silenceSec, thresholdVal) {
             const system = document.getElementById('systemNumber').value.trim();
             const pass = document.getElementById('password').value.trim();
             const ext = document.getElementById('extension').value.trim();
@@ -485,7 +495,7 @@
                 const arrayBuffer = await response.arrayBuffer();
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-                const processedBuffer = removeSilenceFromBuffer(audioBuffer, thresholdSec);
+                const processedBuffer = removeSilenceFromBuffer(audioBuffer, silenceSec, thresholdVal);
                 const wavBlob = bufferToWav(processedBuffer);
                 const downloadUrl = URL.createObjectURL(wavBlob);
                 const a = document.createElement('a');
@@ -510,7 +520,7 @@
             return `${baseName}.wav`;
         }
 
-        async function processAndUploadWithSilence(index, thresholdSec, targetExt) {
+        async function processAndUploadWithSilence(index, silenceSec, thresholdVal, targetExt) {
             const system = document.getElementById('systemNumber').value.trim();
             const pass = document.getElementById('password').value.trim();
             const sourceExt = document.getElementById('extension').value.trim();
@@ -528,7 +538,7 @@
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                 
-                const processedBuffer = removeSilenceFromBuffer(audioBuffer, thresholdSec);
+                const processedBuffer = removeSilenceFromBuffer(audioBuffer, silenceSec, thresholdVal);
                 const wavBlob = bufferToWav(processedBuffer);
                 
                 const formData = new FormData();
@@ -562,9 +572,8 @@
             }
         }
 
-        function removeSilenceFromBuffer(buffer, thresholdSec) {
+        function removeSilenceFromBuffer(buffer, thresholdSec, threshold) {
             const sampleRate = buffer.sampleRate;
-            const threshold = 0.01; 
             const minSilenceSamples = thresholdSec * sampleRate;
             const channels = [];
             for (let c = 0; c < buffer.numberOfChannels; c++) channels.push(buffer.getChannelData(c));
@@ -635,13 +644,14 @@
         }
 
         function bulkSilenceAction() {
-            openSilenceModal(async (silenceVal, uploadPath) => {
+            openSilenceModal(async (silenceVal, thresholdVal, uploadPath) => {
+                const threshold = parseFloat(thresholdVal) / 100;
                 const sortedIndices = Array.from(selectedFiles).sort((a, b) => a - b);
                 for (const idx of sortedIndices) {
                     if (uploadPath) {
-                        await processAndUploadWithSilence(idx, parseFloat(silenceVal), uploadPath);
+                        await processAndUploadWithSilence(idx, parseFloat(silenceVal), threshold, uploadPath);
                     } else {
-                        await processAndDownloadWithSilence(idx, parseFloat(silenceVal));
+                        await processAndDownloadWithSilence(idx, parseFloat(silenceVal), threshold);
                     }
                 }
             });
@@ -785,14 +795,16 @@
             modal.classList.remove('hidden'); modal.classList.add('flex');
             
             document.getElementById('silenceConfirmBtn').onclick = () => {
-                const val = document.getElementById('silenceLengthInput').value.trim();
-                if (val) { callback(val, null); closeSilenceModal(); }
+                const len = document.getElementById('silenceLengthInput').value.trim();
+                const thr = document.getElementById('silenceThresholdInput').value.trim();
+                if (len && thr) { callback(len, thr, null); closeSilenceModal(); }
             };
             
             document.getElementById('silenceUploadBtn').onclick = () => {
-                const val = document.getElementById('silenceLengthInput').value.trim();
+                const len = document.getElementById('silenceLengthInput').value.trim();
+                const thr = document.getElementById('silenceThresholdInput').value.trim();
                 const target = document.getElementById('uploadTargetInput').value.trim();
-                if (val && target) { callback(val, target); closeSilenceModal(); }
+                if (len && thr && target) { callback(len, thr, target); closeSilenceModal(); }
                 else if (!target) alert('נא להזין שלוחת יעד');
             };
         }
