@@ -194,6 +194,10 @@
             background: #2563eb;
         }
 
+        .play-btn.is-file {
+            cursor: default;
+        }
+
         #modalOverlay, #subDirsModalOverlay {
             display: none;
             position: fixed;
@@ -264,7 +268,6 @@
         <div class="modal-content bg-white p-6 rounded-[1.25rem] max-w-2xl w-full shadow-2xl relative">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-3">
-                    <!-- לחצן חזרה אחורה עם חץ מתעגל -->
                     <button onclick="goUpOneLevel()" class="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" title="חזרה לשלוחה מעל">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l5-5m-5 5l5 5"/>
@@ -339,7 +342,7 @@
                 <div class="text-xs font-bold">נבחרו <span id="selectedCount">0</span> קבצים</div>
                 <div class="flex gap-2">
                     <button onclick="bulkDownload()" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">הורדה</button>
-                    <button onclick="bulkSilenceAction()" class="bg-white text-orange-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">הסרת רווח</button>
+                    <button id="bulkSilenceBtn" onclick="bulkSilenceAction()" class="bg-white text-orange-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">הסרת רווח</button>
                     <button onclick="bulkAction('copy')" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">העתקה</button>
                     <button onclick="bulkAction('move')" class="bg-white text-blue-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">העברה</button>
                     <button onclick="bulkAction('delete')" class="bg-white text-red-600 px-3 py-1 rounded-lg text-[10px] font-bold shadow-sm">מחיקה</button>
@@ -353,13 +356,11 @@
                     <span id="fileCount" class="text-[10px] text-blue-600 font-extrabold bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">0</span>
                 </div>
 
-                <!-- חלונית המידע המרכזית -->
                 <div id="centerExtInfo" class="grid grid-cols-[1fr_auto] items-center gap-4 flex-1 text-center bg-white/40 px-4 py-1 rounded-2xl border border-white/40 min-w-[150px]">
                     <div class="flex flex-col">
                         <span id="extTitle" class="font-extrabold text-blue-800 text-xs"></span>
                         <span id="extType" class="text-slate-500 font-bold text-[9px] opacity-75"></span>
                     </div>
-                    <!-- כפתור ניווט לשלוחות - שם הכפתור "ניווט" -->
                     <button id="subDirsNavBtn" onclick="openSubDirsModal()" class="flex items-center gap-1 text-[9px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50/50 px-3 py-1 rounded-full border border-blue-100 transition-all hover:bg-blue-100">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                         ניווט
@@ -411,8 +412,11 @@
 
         function playFile(e, index) {
             e.stopPropagation(); 
-            const audio = document.getElementById('globalAudioPlayer');
             const file = currentFiles[index];
+            const isTextFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
+            if (isTextFile) return;
+
+            const audio = document.getElementById('globalAudioPlayer');
             const system = document.getElementById('systemNumber').value.trim();
             const pass = document.getElementById('password').value.trim();
             const ext = document.getElementById('extension').value.trim();
@@ -444,6 +448,10 @@
         function updatePlayIcon(index, isPlaying) {
             const btn = document.querySelector(`#card-${index} .play-btn`);
             if (!btn) return;
+            const file = currentFiles[index];
+            const isTextFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
+            if (isTextFile) return;
+
             if (isPlaying) {
                 btn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
                 btn.classList.add('bg-orange-500');
@@ -468,17 +476,45 @@
         function updateBulkBar() {
             const bar = document.getElementById('bulkActionsBar');
             const count = document.getElementById('selectedCount');
+            const bulkSilenceBtn = document.getElementById('bulkSilenceBtn');
+            
             count.innerText = selectedFiles.size;
             bar.style.display = selectedFiles.size > 0 ? 'flex' : 'none';
+
+            let hasTextFileSelected = false;
+            selectedFiles.forEach(idx => {
+                const file = currentFiles[idx];
+                if (file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr')) {
+                    hasTextFileSelected = true;
+                }
+            });
+
+            if (hasTextFileSelected) {
+                bulkSilenceBtn.classList.add('opacity-50');
+                bulkSilenceBtn.disabled = true;
+                bulkSilenceBtn.style.cursor = 'not-allowed';
+            } else {
+                bulkSilenceBtn.classList.remove('opacity-50');
+                bulkSilenceBtn.disabled = false;
+                bulkSilenceBtn.style.cursor = 'pointer';
+            }
         }
 
         function toggleSelectAll() {
-            const allSelected = selectedFiles.size === currentFiles.length && currentFiles.length > 0;
-            currentFiles.forEach((_, i) => {
-                const card = document.getElementById(`card-${i}`);
-                if (allSelected) { selectedFiles.delete(i); card.classList.remove('selected'); }
-                else { selectedFiles.add(i); card.classList.add('selected'); }
-            });
+            const playableIndices = currentFiles.map((f, i) => (!f.name.toLowerCase().endsWith('.ini') && !f.name.toLowerCase().endsWith('.ymgr')) ? i : null).filter(idx => idx !== null);
+            const allPlayableSelected = playableIndices.every(idx => selectedFiles.has(idx));
+            
+            if (allPlayableSelected) {
+                playableIndices.forEach(i => {
+                    selectedFiles.delete(i);
+                    document.getElementById(`card-${i}`).classList.remove('selected');
+                });
+            } else {
+                playableIndices.forEach(i => {
+                    selectedFiles.add(i);
+                    document.getElementById(`card-${i}`).classList.add('selected');
+                });
+            }
             updateBulkBar();
         }
 
@@ -595,11 +631,9 @@
                 
                 const formData = new FormData();
                 formData.append('token', `${system}:${pass}`);
-                
                 const cleanTargetExt = targetExt.startsWith('/') ? targetExt : `/${targetExt}`;
                 const finalPath = `ivr2:${cleanTargetExt}${cleanTargetExt.endsWith('/') ? '' : '/'}`;
                 formData.append('path', finalPath);
-                
                 formData.append('autoNumbering', '1');
                 formData.append('convertAudio', '1');
                 formData.append('qqfile', wavBlob, displayedName);
@@ -722,7 +756,6 @@
 
         async function bulkAction(action) {
             if (selectedFiles.size === 0) return;
-
             if (action === 'copy' || action === 'move') {
                 openModal(action === 'copy' ? 'העתקה קבוצתית' : 'העברה קבוצתית', async (target) => {
                     await runBulkSequence(action, target);
@@ -735,17 +768,14 @@
         async function runBulkSequence(action, target = null) {
             document.getElementById('processingOverlay').style.display = 'flex';
             document.getElementById('processingText').innerText = 'מבצע פעולות...';
-            
             const indices = Array.from(selectedFiles);
             for (let i = 0; i < indices.length; i++) {
                 const idx = indices[i];
                 const file = currentFiles[idx];
                 document.getElementById('processingText').innerText = `מבצע ${i+1}/${indices.length}: ${file.name}`;
-                
                 await executeFileAction(action, file.name, target);
                 await new Promise(r => setTimeout(r, 200));
             }
-            
             selectedFiles.clear();
             updateBulkBar();
             document.getElementById('processingOverlay').style.display = 'none';
@@ -777,19 +807,15 @@
                     grid.innerHTML = "";
                     selectedFiles.clear();
                     updateBulkBar();
-
                     subDirsGrid.innerHTML = "";
+                    
                     if (data.dirs && data.dirs.length > 0) {
                         noSubDirsMsg.classList.add('hidden');
                         data.dirs.forEach(dir => {
-                            const translatedType = (typeof extensionTypeTranslations !== 'undefined') 
-                                ? (extensionTypeTranslations[dir.extType] || dir.extType || "תיקייה")
-                                : (dir.extType || "תיקייה");
-
+                            const translatedType = (typeof extensionTypeTranslations !== 'undefined') ? (extensionTypeTranslations[dir.extType] || dir.extType || "תיקייה") : (dir.extType || "תיקייה");
                             const isNumericName = /^\d+$/.test(dir.name);
                             const nameStyle = isNumericName ? 'text-[36px] font-extrabold' : 'text-[9px] font-extrabold';
                             const safeTitle = dir.extTitle || "";
-
                             subDirsGrid.insertAdjacentHTML('beforeend', `
                                 <div onclick="navigateToDir('${dir.path}')" class="dir-card">
                                     <span class="${nameStyle} text-blue-600">${dir.name}</span>
@@ -804,39 +830,68 @@
 
                     if (data.extIni) {
                         document.getElementById('extTitle').innerText = data.extIni.title || "";
-                        const typeLabel = (typeof extensionTypeTranslations !== 'undefined') 
-                            ? (extensionTypeTranslations[data.extIni.type] || data.extIni.type || "כללי")
-                            : (data.extIni.type || "כללי");
+                        const typeLabel = (typeof extensionTypeTranslations !== 'undefined') ? (extensionTypeTranslations[data.extIni.type] || data.extIni.type || "כללי") : (data.extIni.type || "כללי");
                         document.getElementById('extType').innerText = typeLabel;
                     }
 
-                    currentFiles = data.files || [];
+                    let rawFiles = data.files || [];
+                    
+                    // הוספת קבצי ה-ini שנמצאים תחת המפתח 'ini' בתגובת ה-API
+                    if (data.ini && Array.isArray(data.ini)) {
+                        data.ini.forEach(iniFile => {
+                            // מוודאים שזה לא כפול ממה שכבר נמצא ב-files
+                            if (!rawFiles.some(f => f.name === iniFile.name)) {
+                                rawFiles.push(iniFile);
+                            }
+                        });
+                    }
+                    
+                    currentFiles = rawFiles.sort((a, b) => {
+                        const isTextA = a.name.toLowerCase().endsWith('.ini') || a.name.toLowerCase().endsWith('.ymgr');
+                        const isTextB = b.name.toLowerCase().endsWith('.ini') || b.name.toLowerCase().endsWith('.ymgr');
+                        if (isTextA && !isTextB) return 1;
+                        if (!isTextA && isTextB) return -1;
+                        return 0;
+                    });
+
                     document.getElementById('fileCount').innerText = `סה"כ ${currentFiles.length}`;
                     document.getElementById('rangeLabel').innerText = `מ ${parseInt(from) + 1} עד ${parseInt(from) + currentFiles.length}`;
 
                     currentFiles.forEach((file, i) => {
+                        const isTextFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
                         const num = file.name.replace(/\.[^/.]+$/, "");
                         const cleanP = file.phone ? file.phone.replace(/[^0-9]/g, '') : "";
-                        const title = contactsMap.get(cleanP) || (file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : num);
+                        
+                        let title = isTextFile ? file.name : (contactsMap.get(cleanP) || (file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : num));
+
+                        let centerIcon = isTextFile ? `
+                            <div class="play-btn is-file">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                        ` : `
+                            <button class="play-btn" onclick="playFile(event, ${i})">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                            </button>
+                        `;
+
+                        let dropdownItems = `
+                            <div class="dropdown-item" onclick="singleAction(event, 'download', ${i})">הורדה</div>
+                            ${!isTextFile ? `<div class="dropdown-item" onclick="singleAction(event, 'removeSilence', ${i})">הסרת רווח</div>` : ''}
+                            <div class="dropdown-item" onclick="singleAction(event, 'copy', ${i})">העתקה</div>
+                            <div class="dropdown-item" onclick="singleAction(event, 'move', ${i})">העברה</div>
+                            <div class="dropdown-item text-red-600 font-bold" onclick="singleAction(event, 'delete', ${i})">מחיקה</div>
+                        `;
 
                         grid.insertAdjacentHTML('beforeend', `
                             <div id="card-${i}" class="file-card shadow-sm" onclick="toggleFile(${i})">
-                                <div class="file-badge">${num}</div>
+                                ${!isTextFile ? `<div class="file-badge">${num}</div>` : ''}
                                 <button class="options-btn" onclick="toggleDropdown(event, ${i})">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                                 </button>
-                                <div id="dropdown-${i}" class="dropdown-menu">
-                                    <div class="dropdown-item" onclick="singleAction(event, 'download', ${i})">הורדה</div>
-                                    <div class="dropdown-item" onclick="singleAction(event, 'removeSilence', ${i})">הסרת רווח</div>
-                                    <div class="dropdown-item" onclick="singleAction(event, 'copy', ${i})">העתקה</div>
-                                    <div class="dropdown-item" onclick="singleAction(event, 'move', ${i})">העברה</div>
-                                    <div class="dropdown-item text-red-600 font-bold" onclick="singleAction(event, 'delete', ${i})">מחיקה</div>
-                                </div>
-                                <div class="mt-6 mb-2 flex items-center justify-center">
-                                    <button class="play-btn" onclick="playFile(event, ${i})">
-                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                    </button>
-                                </div>
+                                <div id="dropdown-${i}" class="dropdown-menu">${dropdownItems}</div>
+                                <div class="mt-6 mb-2 flex items-center justify-center">${centerIcon}</div>
                                 <h4 class="font-bold text-slate-800 text-[10px] line-clamp-2 px-1 mb-1">${title}</h4>
                                 <div class="mt-auto bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-[8px] space-y-0.5 font-bold">
                                     <div class="flex justify-between"><span>טל:</span><span>${file.phone || "-"}</span></div>
@@ -860,12 +915,10 @@
         function goUpOneLevel() {
             let currentPath = document.getElementById('extension').value.trim();
             if (currentPath.endsWith('/')) currentPath = currentPath.slice(0, -1);
-            
             const parts = currentPath.split('/');
             if (parts.length > 1) {
                 parts.pop();
-                const newPath = parts.join('/');
-                document.getElementById('extension').value = newPath;
+                document.getElementById('extension').value = parts.join('/');
                 document.getElementById('filesFromInput').value = 0;
                 closeSubDirsModal();
                 fetchData();
@@ -878,10 +931,9 @@
         }
 
         function changePage(dir) {
-            const input = document.getElementById('filesFromInput');
             const limit = parseInt(document.getElementById('filesLimitInput').value);
-            let next = (parseInt(input.value) || 0) + (dir * limit);
-            input.value = Math.max(0, next);
+            let next = (parseInt(document.getElementById('filesFromInput').value) || 0) + (dir * limit);
+            document.getElementById('filesFromInput').value = Math.max(0, next);
             fetchData();
         }
 
@@ -894,24 +946,16 @@
             };
         }
         function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
-        
-        function openSubDirsModal() {
-            document.getElementById('subDirsModalOverlay').style.display = 'flex';
-        }
-        function closeSubDirsModal() {
-            document.getElementById('subDirsModalOverlay').style.display = 'none';
-        }
-
+        function openSubDirsModal() { document.getElementById('subDirsModalOverlay').style.display = 'flex'; }
+        function closeSubDirsModal() { document.getElementById('subDirsModalOverlay').style.display = 'none'; }
         function openSilenceModal(callback) {
             const modal = document.getElementById('silenceModalOverlay');
             modal.classList.remove('hidden'); modal.classList.add('flex');
-            
             document.getElementById('silenceConfirmBtn').onclick = () => {
                 const len = document.getElementById('silenceLengthInput').value.trim();
                 const thr = document.getElementById('silenceThresholdInput').value.trim();
                 if (len && thr) { callback(len, thr, null); closeSilenceModal(); }
             };
-            
             document.getElementById('silenceUploadBtn').onclick = () => {
                 const len = document.getElementById('silenceLengthInput').value.trim();
                 const thr = document.getElementById('silenceThresholdInput').value.trim();
