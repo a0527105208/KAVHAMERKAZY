@@ -198,7 +198,7 @@
             cursor: pointer;
         }
 
-        #modalOverlay, #subDirsModalOverlay, #textFileModalOverlay {
+        #modalOverlay, #subDirsModalOverlay, #textFileModalOverlay, #ymgrModalOverlay {
             display: none;
             position: fixed;
             top: 0;
@@ -241,6 +241,29 @@
             border-color: #3b82f6;
             transform: translateY(-2px);
         }
+
+        /* YMGR Table Styling */
+        .ymgr-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .ymgr-table th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 800;
+            text-align: right;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .ymgr-table td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+        .ymgr-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
     </style>
 </head>
 <body>
@@ -279,6 +302,28 @@
                     שמור שינויים
                 </button>
                 <button onclick="closeTextFileModal()" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold hover:bg-slate-200 transition-colors">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- חלונית הצגת קובץ YMGR -->
+    <div id="ymgrModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] max-w-4xl w-full shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="ymgrModalTitle" class="text-lg font-bold text-slate-800"></h3>
+                <button onclick="closeYmgrModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="ymgrContent" class="w-full max-h-[60vh] overflow-auto border border-slate-100 rounded-xl mb-4 bg-slate-50">
+                <!-- טבלה תיווצר כאן -->
+            </div>
+            <div class="flex gap-2">
+                <button id="downloadYmgrCsvBtn" class="flex-1 bg-green-600 text-white py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    הורדה (CSV)
+                </button>
+                <button onclick="closeYmgrModal()" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold hover:bg-slate-200 transition-colors">ביטול</button>
             </div>
         </div>
     </div>
@@ -433,10 +478,16 @@
         function playFile(e, index) {
             e.stopPropagation(); 
             const file = currentFiles[index];
-            const isTextFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
+            const isIni = file.name.toLowerCase().endsWith('.ini');
+            const isYmgr = file.name.toLowerCase().endsWith('.ymgr');
             
-            if (isTextFile) {
+            if (isIni) {
                 openTextFileEditor(index);
+                return;
+            }
+
+            if (isYmgr) {
+                openYmgrViewer(index);
                 return;
             }
 
@@ -475,11 +526,6 @@
             const pass = document.getElementById('password').value.trim();
             const ext = document.getElementById('extension').value.trim();
 
-            if (file.name.toLowerCase().endsWith('.ymgr')) {
-                alert('עריכת קבצי ymgr תתאפשר בהמשך.');
-                return;
-            }
-
             document.getElementById('processingOverlay').style.display = 'flex';
             document.getElementById('processingText').innerText = `טוען את ${file.name}...`;
 
@@ -505,6 +551,69 @@
             } finally {
                 document.getElementById('processingOverlay').style.display = 'none';
             }
+        }
+
+        async function openYmgrViewer(index) {
+            const file = currentFiles[index];
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `טוען דוח ${file.name}...`;
+
+            const url = `https://www.call2all.co.il/ym/api/RenderYMGRFile?token=${system}:${pass}&wath=ivr2:/${ext}/${file.name}&convertType=html`;
+
+            try {
+                const res = await fetch(url);
+                const htmlText = await res.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+                const title = doc.querySelector('h1')?.innerText || file.name;
+                const table = doc.querySelector('table');
+
+                if (table) {
+                    table.className = "ymgr-table";
+                    document.getElementById('ymgrModalTitle').innerText = title;
+                    document.getElementById('ymgrContent').innerHTML = "";
+                    document.getElementById('ymgrContent').appendChild(table);
+                    document.getElementById('ymgrModalOverlay').style.display = 'flex';
+
+                    document.getElementById('downloadYmgrCsvBtn').onclick = () => {
+                        downloadTableAsCsv(table, title);
+                    };
+                } else {
+                    alert('לא נמצאה טבלה בקובץ המבוקש');
+                }
+            } catch (e) {
+                alert('שגיאה בטעינת דוח YMGR');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        function downloadTableAsCsv(table, filename) {
+            let csv = [];
+            const rows = table.querySelectorAll("tr");
+            
+            for (let i = 0; i < rows.length; i++) {
+                let row = [], cols = rows[i].querySelectorAll("td, th");
+                for (let j = 0; j < cols.length; j++) 
+                    row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+                csv.push(row.join(","));
+            }
+
+            const csvContent = "\uFEFF" + csv.join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${filename}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         async function saveTextFile(fileName, content) {
@@ -539,12 +648,16 @@
             document.getElementById('textFileModalOverlay').style.display = 'none';
         }
 
+        function closeYmgrModal() {
+            document.getElementById('ymgrModalOverlay').style.display = 'none';
+        }
+
         function updatePlayIcon(index, isPlaying) {
             const btn = document.querySelector(`#card-${index} .play-btn`);
             if (!btn) return;
             const file = currentFiles[index];
-            const isTextFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
-            if (isTextFile) return;
+            const isSpecialFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
+            if (isSpecialFile) return;
 
             if (isPlaying) {
                 btn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
@@ -575,15 +688,15 @@
             count.innerText = selectedFiles.size;
             bar.style.display = selectedFiles.size > 0 ? 'flex' : 'none';
 
-            let hasTextFileSelected = false;
+            let hasSpecialFileSelected = false;
             selectedFiles.forEach(idx => {
                 const file = currentFiles[idx];
                 if (file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr')) {
-                    hasTextFileSelected = true;
+                    hasSpecialFileSelected = true;
                 }
             });
 
-            if (hasTextFileSelected) {
+            if (hasSpecialFileSelected) {
                 bulkSilenceBtn.classList.add('opacity-50');
                 bulkSilenceBtn.disabled = true;
                 bulkSilenceBtn.style.cursor = 'not-allowed';
@@ -939,10 +1052,10 @@
                     }
                     
                     currentFiles = rawFiles.sort((a, b) => {
-                        const isTextA = a.name.toLowerCase().endsWith('.ini') || a.name.toLowerCase().endsWith('.ymgr');
-                        const isTextB = b.name.toLowerCase().endsWith('.ini') || b.name.toLowerCase().endsWith('.ymgr');
-                        if (isTextA && !isTextB) return 1;
-                        if (!isTextA && isTextB) return -1;
+                        const isSpecialA = a.name.toLowerCase().endsWith('.ini') || a.name.toLowerCase().endsWith('.ymgr');
+                        const isSpecialB = b.name.toLowerCase().endsWith('.ini') || b.name.toLowerCase().endsWith('.ymgr');
+                        if (isSpecialA && !isSpecialB) return 1;
+                        if (!isSpecialA && isSpecialB) return -1;
                         return 0;
                     });
 
@@ -950,27 +1063,30 @@
                     document.getElementById('rangeLabel').innerText = `מ ${parseInt(from) + 1} עד ${parseInt(from) + currentFiles.length}`;
 
                     currentFiles.forEach((file, i) => {
-                        const isTextFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
+                        const isIni = file.name.toLowerCase().endsWith('.ini');
+                        const isYmgr = file.name.toLowerCase().endsWith('.ymgr');
+                        const isSpecial = isIni || isYmgr;
+                        
                         const num = file.name.replace(/\.[^/.]+$/, "");
                         const cleanP = file.phone ? file.phone.replace(/[^0-9]/g, '') : "";
                         
-                        let title = isTextFile ? file.name : (contactsMap.get(cleanP) || (file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : num));
+                        let title = isSpecial ? file.name : (contactsMap.get(cleanP) || (file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : num));
 
-                        let centerIcon = isTextFile ? `
-                            <div class="play-btn is-file" onclick="playFile(event, ${i})">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                </svg>
-                            </div>
-                        ` : `
-                            <button class="play-btn" onclick="playFile(event, ${i})">
-                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            </button>
-                        `;
+                        let iconSvg = isIni ? `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        ` : isYmgr ? `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        ` : `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+
+                        let centerIcon = `<div class="play-btn ${isSpecial ? 'is-file' : ''}" onclick="playFile(event, ${i})">${iconSvg}</div>`;
 
                         let dropdownItems = `
                             <div class="dropdown-item" onclick="singleAction(event, 'download', ${i})">הורדה</div>
-                            ${!isTextFile ? `<div class="dropdown-item" onclick="singleAction(event, 'removeSilence', ${i})">הסרת רווח</div>` : ''}
+                            ${!isSpecial ? `<div class="dropdown-item" onclick="singleAction(event, 'removeSilence', ${i})">הסרת רווח</div>` : ''}
                             <div class="dropdown-item" onclick="singleAction(event, 'copy', ${i})">העתקה</div>
                             <div class="dropdown-item" onclick="singleAction(event, 'move', ${i})">העברה</div>
                             <div class="dropdown-item text-red-600 font-bold" onclick="singleAction(event, 'delete', ${i})">מחיקה</div>
@@ -978,7 +1094,7 @@
 
                         grid.insertAdjacentHTML('beforeend', `
                             <div id="card-${i}" class="file-card shadow-sm" onclick="toggleFile(${i})">
-                                ${!isTextFile ? `<div class="file-badge">${num}</div>` : ''}
+                                ${!isSpecial ? `<div class="file-badge">${num}</div>` : ''}
                                 <button class="options-btn" onclick="toggleDropdown(event, ${i})">
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
                                 </button>
