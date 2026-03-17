@@ -195,10 +195,10 @@
         }
 
         .play-btn.is-file {
-            cursor: default;
+            cursor: pointer;
         }
 
-        #modalOverlay, #subDirsModalOverlay {
+        #modalOverlay, #subDirsModalOverlay, #textFileModalOverlay {
             display: none;
             position: fixed;
             top: 0;
@@ -259,6 +259,26 @@
             <div class="flex gap-2">
                 <button id="modalConfirmBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-xl font-bold hover:bg-blue-700">אישור</button>
                 <button onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- חלונית עריכת קובץ טקסט -->
+    <div id="textFileModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] max-w-2xl w-full shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="textFileModalTitle" class="text-lg font-bold text-slate-800"></h3>
+                <button onclick="closeTextFileModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <textarea id="textFileContent" class="w-full h-[45vh] p-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm outline-none resize-none mb-4" dir="ltr"></textarea>
+            <div class="flex gap-2">
+                <button id="saveTextFileBtn" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    שמור שינויים
+                </button>
+                <button onclick="closeTextFileModal()" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold hover:bg-slate-200 transition-colors">ביטול</button>
             </div>
         </div>
     </div>
@@ -414,7 +434,11 @@
             e.stopPropagation(); 
             const file = currentFiles[index];
             const isTextFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
-            if (isTextFile) return;
+            
+            if (isTextFile) {
+                openTextFileEditor(index);
+                return;
+            }
 
             const audio = document.getElementById('globalAudioPlayer');
             const system = document.getElementById('systemNumber').value.trim();
@@ -443,6 +467,76 @@
                 updatePlayIcon(index, false);
                 currentlyPlayingIndex = null;
             };
+        }
+
+        async function openTextFileEditor(index) {
+            const file = currentFiles[index];
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+
+            if (file.name.toLowerCase().endsWith('.ymgr')) {
+                alert('עריכת קבצי ymgr תתאפשר בהמשך.');
+                return;
+            }
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `טוען את ${file.name}...`;
+
+            const url = `https://www.call2all.co.il/ym/api/GetTextFile?token=${system}:${pass}&what=ivr2:${ext}/${file.name}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.responseStatus === 'OK') {
+                    document.getElementById('textFileModalTitle').innerText = file.name;
+                    document.getElementById('textFileContent').value = data.contents || "";
+                    document.getElementById('textFileModalOverlay').style.display = 'flex';
+                    
+                    document.getElementById('saveTextFileBtn').onclick = async () => {
+                        await saveTextFile(file.name, document.getElementById('textFileContent').value);
+                    };
+                } else {
+                    alert('שגיאה בטעינת הקובץ: ' + (data.message || 'שגיאה לא ידועה'));
+                }
+            } catch (e) {
+                alert('שגיאה בתקשורת עם השרת');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        async function saveTextFile(fileName, content) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `שומר את ${fileName}...`;
+
+            const url = `https://www.call2all.co.il/ym/api/UploadTextFile?token=${system}:${pass}&what=ivr2:${ext}/${fileName}&contents=${encodeURIComponent(content)}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.responseStatus === 'OK') {
+                    alert('הקובץ נשמר בהצלחה!');
+                    closeTextFileModal();
+                    await fetchData();
+                } else {
+                    alert('השמירה נכשלה: ' + (data.message || 'שגיאה לא ידועה'));
+                }
+            } catch (e) {
+                alert('שגיאה בשמירת הקובץ');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        function closeTextFileModal() {
+            document.getElementById('textFileModalOverlay').style.display = 'none';
         }
 
         function updatePlayIcon(index, isPlaying) {
@@ -836,10 +930,8 @@
 
                     let rawFiles = data.files || [];
                     
-                    // הוספת קבצי ה-ini שנמצאים תחת המפתח 'ini' בתגובת ה-API
                     if (data.ini && Array.isArray(data.ini)) {
                         data.ini.forEach(iniFile => {
-                            // מוודאים שזה לא כפול ממה שכבר נמצא ב-files
                             if (!rawFiles.some(f => f.name === iniFile.name)) {
                                 rawFiles.push(iniFile);
                             }
@@ -865,7 +957,7 @@
                         let title = isTextFile ? file.name : (contactsMap.get(cleanP) || (file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : num));
 
                         let centerIcon = isTextFile ? `
-                            <div class="play-btn is-file">
+                            <div class="play-btn is-file" onclick="playFile(event, ${i})">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
