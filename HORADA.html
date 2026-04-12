@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
+<html lang="he" dir="rtl"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מוריד קבצים - קו המרכזי</title>
@@ -45,7 +44,6 @@
             transform: scale(1.05);
         }
 
-        /* הסרת חיצי מספרים כדי לשמור על עיצוב נקי */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
             -webkit-appearance: none;
@@ -55,7 +53,6 @@
             -moz-appearance: textfield;
         }
 
-        /* סרגל גלילה מותאם אישי ללוג */
         #statusLog::-webkit-scrollbar {
             width: 4px;
         }
@@ -65,6 +62,12 @@
         #statusLog::-webkit-scrollbar-thumb {
             background: rgba(59, 130, 246, 0.5);
             border-radius: 10px;
+        }
+
+        /* Modal specific styles */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
@@ -97,14 +100,12 @@
                     <div class="relative">
                         <input type="password" id="password" value="8549052" class="w-full px-4 py-2.5 bg-white/60 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all">
                         <button type="button" onclick="togglePassword()" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-blue-600 transition-colors">
-                            <!-- Eye Icon -->
                             <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                             </svg>
-                            <!-- Eye Off Icon (hidden by default) -->
                             <svg id="eyeOffIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"></path>
                             </svg>
                         </button>
                     </div>
@@ -133,12 +134,30 @@
                 </div>
             </div>
 
-            <button onclick="startDownload()" id="btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transform transition active:scale-95 flex items-center justify-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                התחל הורדה מרובה
-            </button>
+            <!-- Action Buttons -->
+            <div class="space-y-3">
+                <button onclick="startDownload()" id="btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transform transition active:scale-95 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    התחל הורדה מרובה
+                </button>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="openModal('copy')" class="bg-white/60 hover:bg-white text-slate-700 font-bold py-3 rounded-2xl border border-slate-200 transform transition active:scale-95 flex items-center justify-center gap-2 text-sm shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                        </svg>
+                        העתקה
+                    </button>
+                    <button onclick="openModal('move')" class="bg-white/60 hover:bg-white text-slate-700 font-bold py-3 rounded-2xl border border-slate-200 transform transition active:scale-95 flex items-center justify-center gap-2 text-sm shadow-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                        </svg>
+                        העברה
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Progress Feedback -->
@@ -156,7 +175,39 @@
         </div>
     </div>
 
+    <!-- Action Modal -->
+    <div id="actionModal" class="fixed inset-0 modal-overlay z-50 flex items-center justify-center hidden">
+        <div class="glass max-w-xs w-full rounded-3xl p-6 shadow-2xl scale-95 transition-transform duration-300">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="modalTitle" class="text-xl font-bold text-slate-800 tracking-tight">ביצוע פעולה</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="block text-xs font-bold text-slate-600 px-1">שלוחת יעד</label>
+                    <input type="text" id="target_shluha" placeholder="לדוג' 5/1" class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold text-sm">
+                </div>
+                
+                <!-- Checkbox for numbering preservation -->
+                <div class="flex items-center gap-2 px-1">
+                    <input type="checkbox" id="keep_numbering" checked class="w-4 h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 cursor-pointer">
+                    <label for="keep_numbering" class="text-xs font-bold text-slate-700 cursor-pointer select-none">שמירה על המספור הקיים</label>
+                </div>
+
+                <button id="modalExecuteBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg transition active:scale-95">
+                    ביצוע
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        let currentMode = '';
+
         function togglePassword() {
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eyeIcon');
@@ -171,6 +222,123 @@
                 eyeIcon.classList.remove('hidden');
                 eyeOffIcon.classList.add('hidden');
             }
+        }
+
+        function openModal(mode) {
+            currentMode = mode;
+            const modal = document.getElementById('actionModal');
+            const title = document.getElementById('modalTitle');
+            const btn = document.getElementById('modalExecuteBtn');
+            const input = document.getElementById('target_shluha');
+            
+            input.value = ''; // ניקוי שדה
+            modal.classList.remove('hidden');
+            
+            if (mode === 'copy') {
+                title.innerText = 'העתקת קבצים';
+                btn.innerText = 'ביצוע העתקה';
+                btn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-lg transition active:scale-95";
+                btn.onclick = () => runFileAction('copy');
+            } else {
+                title.innerText = 'העברה (Move)';
+                btn.innerText = 'ביצוע העברה';
+                btn.className = "w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-2xl shadow-lg transition active:scale-95";
+                btn.onclick = () => runFileAction('move');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('actionModal').classList.add('hidden');
+        }
+
+        // פונקציה מאוחדת לביצוע העתקה או העברה בלולאה
+        async function runFileAction(actionType) {
+            const systemNum = document.getElementById('system_number').value;
+            const password = document.getElementById('password').value;
+            const sourceShluha = document.getElementById('shluha').value;
+            const targetShluha = document.getElementById('target_shluha').value;
+            const keepNumbering = document.getElementById('keep_numbering').checked;
+            const fileType = document.getElementById('file_type').value || 'wav';
+            
+            const startVal = document.getElementById('start').value;
+            const endVal = document.getElementById('end').value;
+            const start = parseInt(startVal !== "" ? startVal : "0");
+            const end = parseInt(endVal !== "" ? endVal : "9999");
+
+            if (!targetShluha) {
+                alert("נא להזין שלוחת יעד");
+                return;
+            }
+
+            closeModal();
+
+            const log = document.getElementById('statusLog');
+            const container = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            const progressText = document.getElementById('progressText');
+            const btn = document.getElementById('btn');
+
+            container.classList.remove('hidden');
+            progressText.innerText = actionType === 'copy' ? "מעתיק קבצים..." : "מעביר קבצים...";
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            log.innerHTML = '';
+
+            const token = `${systemNum}:${password}`;
+            const total = end - start + 1;
+            let count = 0;
+
+            for (let i = start; i <= end; i++) {
+                let formattedNum = i < 1000 ? i.toString().padStart(3, '0') : i.toString();
+                let fileName = `${formattedNum}.${fileType}`;
+                
+                // בנית ה-URL לפי הדרישות
+                let targetPath = `ivr2:/${targetShluha}`;
+                if (keepNumbering) {
+                    targetPath += `/${fileName}`;
+                }
+
+                let url = `https://www.call2all.co.il/ym/api/FileAction?token=${token}&action=${actionType}&what=ivr2:/${sourceShluha}/${fileName}&target=${targetPath}`;
+
+                const entry = document.createElement('div');
+                entry.className = "mb-1";
+                entry.textContent = `> ${actionType === 'copy' ? 'העתקת' : 'העברת'} ${fileName}...`;
+                log.appendChild(entry);
+                log.scrollTop = log.scrollHeight;
+
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+                    
+                    if (data.responseStatus === "OK") {
+                        entry.classList.add('text-green-600');
+                        entry.textContent += " [בוצע]";
+                    } else {
+                        entry.classList.add('text-orange-500');
+                        entry.textContent += ` [דילוג: ${data.message || 'לא קיים'}]`;
+                    }
+                } catch (e) {
+                    entry.classList.add('text-red-500');
+                    entry.textContent += " [שגיאה]";
+                }
+
+                count++;
+                let percent = Math.round((count / total) * 100);
+                progressBar.style.width = percent + '%';
+                progressPercent.innerText = percent + '%';
+                
+                // השהיה קלה למניעת עומס
+                await new Promise(r => setTimeout(r, 400));
+            }
+
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+            const finalMsg = document.createElement('div');
+            finalMsg.className = "text-blue-600 font-bold mt-2 border-t border-blue-100 pt-1";
+            finalMsg.textContent = "הפעולה הסתיימה!";
+            log.appendChild(finalMsg);
+            log.scrollTop = log.scrollHeight;
         }
 
         async function startDownload() {
@@ -189,16 +357,19 @@
             const log = document.getElementById('statusLog');
             const progressBar = document.getElementById('progressBar');
             const progressPercent = document.getElementById('progressPercent');
+            const progressText = document.getElementById('progressText');
             const container = document.getElementById('progressContainer');
 
             const token = `${systemNum}:${password}`;
 
             if (!systemNum || !password || !shluha) {
-                alert("נא למלא את כל השדות בצורה תקינה");
+                log.innerHTML = '<div class="text-red-500 font-bold text-xs">נא למלא את כל השדות בצורה תקינה</div>';
+                container.classList.remove('hidden');
                 return;
             }
 
             container.classList.remove('hidden');
+            progressText.innerText = "מוריד קבצים...";
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
             log.innerHTML = '';
@@ -243,7 +414,6 @@
                 progressBar.style.width = percent + '%';
                 progressPercent.innerText = percent + '%';
                 
-                // השהיית בטיחות כדי למנוע קריסת דפדפן ולכבד מגבלות קצב
                 await new Promise(r => setTimeout(r, 650));
             }
 
