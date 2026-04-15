@@ -134,7 +134,6 @@
         </div>
     </div>
 
-    <!-- Summary Modals omitted for brevity but they follow the same pattern as previous version -->
     <!-- File Summary Modal -->
     <div id="fileSummaryModal" class="modal-overlay">
         <div class="glass p-6 rounded-3xl max-w-2xl w-full mx-4 flex flex-col max-h-[85vh]">
@@ -148,10 +147,17 @@
                     </button>
                 </div>
             </div>
-            <input type="text" id="summarySearchInput" onkeyup="handleSummarySearch()" placeholder="חיפוש בסיכום..." class="mb-4 w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none">
+            <input type="text" id="summarySearchInput" onkeyup="handleSummarySearch()" placeholder="חיפוש בסיכום (קובץ או תוכן)..." class="mb-4 w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20">
             <div class="overflow-y-auto flex-grow custom-scrollbar">
                 <table class="w-full text-right text-sm">
-                    <thead class="sticky top-0 bg-slate-50"><tr><th class="p-3 border-b text-center font-bold">קובץ</th><th class="p-3 border-b text-center font-bold">שדרן</th><th class="p-3 border-b text-center font-bold">תוכן</th><th class="p-3 border-b text-center font-bold">דקות האזנה</th></tr></thead>
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">קובץ</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">שדרן</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">תוכן</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">דקות האזנה</th>
+                        </tr>
+                    </thead>
                     <tbody id="fileSummaryBody"></tbody>
                 </table>
             </div>
@@ -165,15 +171,80 @@
                 <h3 class="text-xl font-bold text-slate-800">סיכום האזנה לפי שדרן</h3>
                 <div class="flex items-center gap-2">
                     <button onclick="sortAnnouncerSummaryByDuration()" class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all">מיין לפי האזנה</button>
+                    <button onclick="exportAnnouncerSummaryData()" class="px-3 py-1.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-all">ייצוא</button>
                     <button onclick="closeAnnouncerSummary()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                 </div>
             </div>
+            <input type="text" id="announcerSearchInput" onkeyup="handleAnnouncerSummarySearch()" placeholder="חיפוש בסיכום שדרנים..." class="mb-4 w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20">
             <div class="overflow-y-auto flex-grow custom-scrollbar">
                 <table class="w-full text-right text-sm">
-                    <thead class="sticky top-0 bg-slate-50"><tr><th class="p-3 border-b text-center font-bold">שדרן</th><th class="p-3 border-b text-center font-bold">דקות האזנה</th></tr></thead>
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">שדרן</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">דקות האזנה</th>
+                        </tr>
+                    </thead>
                     <tbody id="announcerSummaryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extension Summary Modal -->
+    <div id="extensionSummaryModal" class="modal-overlay">
+        <div class="glass p-6 rounded-3xl max-w-2xl w-full mx-4 flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between mb-4 border-b pb-4">
+                <h3 class="text-xl font-bold text-slate-800">סיכום האזנה לפי שלוחה</h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="sortExtensionSummaryByDuration()" class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all">מיין לפי האזנה</button>
+                    <button onclick="exportExtensionSummaryData()" class="px-3 py-1.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-all">ייצוא</button>
+                    <button onclick="closeExtensionSummary()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+            <input type="text" id="extensionSearchInput" onkeyup="handleExtensionSummarySearch()" placeholder="חיפוש בסיכום שלוחות..." class="mb-4 w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20">
+            <div class="overflow-y-auto flex-grow custom-scrollbar">
+                <table class="w-full text-right text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">שלוחה</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">שם השלוחה</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">דקות האזנה</th>
+                        </tr>
+                    </thead>
+                    <tbody id="extensionSummaryBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phone Summary Modal -->
+    <div id="phoneSummaryModal" class="modal-overlay">
+        <div class="glass p-6 rounded-3xl max-w-2xl w-full mx-4 flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between mb-4 border-b pb-4">
+                <h3 class="text-xl font-bold text-slate-800">סיכום האזנה לפי טלפון</h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="sortPhoneSummaryByDuration()" class="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl text-xs font-bold hover:bg-blue-100 transition-all">מיין לפי האזנה</button>
+                    <button onclick="exportPhoneSummaryData()" class="px-3 py-1.5 bg-green-600 text-white rounded-xl text-xs font-bold hover:bg-green-700 transition-all">ייצוא</button>
+                    <button onclick="closePhoneSummary()" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+            <input type="text" id="phoneSearchInput" onkeyup="handlePhoneSummarySearch()" placeholder="חיפוש בסיכום טלפונים..." class="mb-4 w-full px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20">
+            <div class="overflow-y-auto flex-grow custom-scrollbar">
+                <table class="w-full text-right text-sm">
+                    <thead class="sticky top-0 bg-slate-50">
+                        <tr>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">טלפון</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">שם</th>
+                            <th class="p-3 border-b text-center font-bold text-slate-700">דקות האזנה</th>
+                        </tr>
+                    </thead>
+                    <tbody id="phoneSummaryBody"></tbody>
                 </table>
             </div>
         </div>
@@ -185,7 +256,7 @@
         <!-- Header -->
         <div class="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div class="flex items-center gap-4">
-                <a href="#"><img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" class="profile-img rounded-full bg-white"></a>
+                <a href="index.html"><img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" class="profile-img rounded-full bg-white"></a>
                 <div>
                     <h1 class="text-xl md:text-2xl font-bold text-slate-800 tracking-tight">ניהול נתוני האזנה</h1>
                     <p class="text-blue-700 font-bold text-[10px] md:text-xs">נבנה ופותח על ידי יצחק לרנר</p>
@@ -217,40 +288,91 @@
                         <option value="">בחר שנה</option>
                         <option value="2024">2024</option>
                         <option value="2025">2025</option>
+                        <option value="2026">2026</option>
                     </select>
-                    <select id="monthSelect" class="px-2 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold"><option value="">בחר חודש</option></select>
-                    <select id="daySelect" class="px-2 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold"><option value="">בחר יום</option><option value="">כל החודש</option></select>
+                    <select id="monthSelect" class="px-2 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold">
+                        <option value="">בחר חודש</option>
+                    </select>
+                    <select id="daySelect" class="px-2 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold">
+                        <option value="">בחר יום</option>
+                        <option value="">כל החודש</option>
+                    </select>
                 </div>
             </div>
-            <div class="lg:col-span-4"><button onclick="handleFetchClick()" id="fetchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-md transition-all">טען נתוני האזנה מהמערכת</button></div>
+            <div class="lg:col-span-4">
+                <button onclick="handleFetchClick()" id="fetchBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-2xl shadow-md transition-all flex items-center justify-center gap-3">
+                    טען נתוני האזנה מהמערכת
+                </button>
+            </div>
         </div>
 
-        <!-- Loader -->
+        <!-- Global Loader -->
         <div id="globalLoader" class="hidden py-20 flex flex-col items-center justify-center space-y-4">
             <svg class="w-16 h-16 text-blue-600 spinner" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <p id="loaderText" class="text-blue-700 font-bold text-lg animate-pulse">מעבד נתונים...</p>
+            <p id="loaderText" class="text-blue-700 font-bold text-lg animate-pulse text-center max-w-md">טוען נתונים ושמות שלוחות...</p>
         </div>
 
-        <!-- Results Section -->
+        <!-- Results -->
         <div id="resultsSection" class="hidden space-y-4">
             <div class="bg-blue-50/80 border border-blue-100 p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                    <p class="text-blue-600 text-[10px] font-bold uppercase tracking-wider">סה"כ זמן האזנה (כולל קבצים חיצוניים)</p>
-                    <p id="totalDurationDisplay" class="text-xl font-bold text-slate-800">0 דקות</p>
+                <div class="flex items-center gap-4">
+                    <div class="p-3 bg-blue-100 rounded-xl text-blue-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <p class="text-blue-600 text-[10px] font-bold uppercase tracking-wider">סה"כ זמן האזנה (כולל קבצים שנוספו)</p>
+                        <p id="totalDurationDisplay" class="text-xl font-bold text-slate-800">0 דקות האזנה בקבצים</p>
+                    </div>
                 </div>
-                <div class="flex gap-2 text-white">
-                    <button onclick="openFileSummary()" class="px-4 py-2 bg-blue-600 rounded-xl text-xs font-bold shadow-sm">סיכום לפי קובץ</button>
-                    <button onclick="openAnnouncerSummary()" class="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-bold shadow-sm">סיכום לפי שדרן</button>
+                <div class="flex gap-2 w-full md:w-auto flex-wrap justify-center text-white">
+                    <button onclick="openFileSummary()" class="px-4 py-2 bg-blue-600 rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm flex items-center justify-center gap-2">
+                        סיכום לפי קובץ
+                    </button>
+                    <button onclick="openAnnouncerSummary()" class="px-4 py-2 bg-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-sm flex items-center justify-center gap-2">
+                        סיכום לפי שדרן
+                    </button>
+                    <button onclick="openExtensionSummary()" class="px-4 py-2 bg-slate-700 rounded-xl text-xs font-bold hover:bg-slate-800 shadow-sm flex items-center justify-center gap-2">
+                        סיכום לפי שלוחה
+                    </button>
+                    <button onclick="openPhoneSummary()" class="px-4 py-2 bg-emerald-700 rounded-xl text-xs font-bold hover:bg-emerald-800 shadow-sm flex items-center justify-center gap-2">
+                        סיכום לפי טלפון
+                    </button>
                 </div>
             </div>
 
             <!-- Search Area -->
             <div class="space-y-3">
-                <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="חיפוש חופשי בטבלה..." class="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm shadow-sm outline-none">
-                <div id="advancedSearchRow" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-2 bg-slate-50/50 p-3 rounded-2xl border border-slate-100"></div>
+                <div class="flex gap-2">
+                    <input type="text" id="searchInput" onkeyup="handleSearch()" placeholder="חיפוש חופשי בטבלה..." class="flex-grow px-4 py-3 bg-white border border-slate-200 rounded-2xl text-sm shadow-sm outline-none focus:ring-2 focus:ring-blue-500/20">
+                    <button onclick="toggleAdvancedSearch()" class="px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                        חיפוש מתקדם
+                    </button>
+                </div>
+                
+                <div id="advancedSearchRow" class="hidden grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 bg-slate-50/50 p-3 rounded-2xl border border-slate-100"></div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2 px-2">
+                <div class="flex items-center gap-3">
+                    <div id="statsTop" class="text-[11px] text-slate-500 font-bold"></div>
+                    <select id="rowsPerPageSelectTop" onchange="updateRowsPerPage(this.value)" class="px-2 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold">
+                        <option value="20">20 שורות</option>
+                        <option value="50">50 שורות</option>
+                        <option value="100">100 שורות</option>
+                        <option value="500">500 שורות</option>
+                        <option value="1000">1000 שורות</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="prevPage()" class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold">הקודם</button>
+                    <span class="pageIndicator text-[10px] font-bold text-slate-600"></span>
+                    <button onclick="nextPage()" class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold">הבא</button>
+                </div>
             </div>
 
             <div class="table-container border border-slate-200 rounded-2xl bg-white shadow-sm">
@@ -259,34 +381,33 @@
                     <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
                 </table>
             </div>
-            
-            <div class="flex items-center justify-between px-2">
-                <span id="statsTop" class="text-[11px] text-slate-500 font-bold"></span>
-                <div class="flex items-center gap-2">
-                    <button onclick="prevPage()" class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold">הקודם</button>
-                    <span class="pageIndicator text-[10px] font-bold text-slate-600"></span>
-                    <button onclick="nextPage()" class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-bold">הבא</button>
-                </div>
-            </div>
         </div>
 
-        <div id="placeholder" class="py-20 text-center text-slate-400 font-medium">בחר תאריך מהמערכת או טען קובץ CSV חיצוני</div>
+        <div id="placeholder" class="py-20 text-center text-slate-400 font-medium">בחר תאריך או טען קובץ CSV כדי להתחיל</div>
     </div>
 
     <script>
         const CONSTANT_SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQvr-tlHAmKtk54PN_K5p32rheetvG5ME2TL3WwIPNUVMktYYp2i3FlFvsa-INE0z7cfMea0-13JHkB/pub?gid=0&single=true&output=csv";
-        let filesMap = {}, filteredHeaders = ["שלוחה", "שם השלוחה", "השמעה", "שדרן", "תוכן", "טלפון", "שם", "תאריך", "שעה", "משך"], filteredDataRows = [], searchResults = [], currentPage = 1, rowsPerPage = 50;
-        let columnFilters = {}, ivrTitlesCache = {};
+        let filesMap = {}, filteredHeaders = [], filteredDataRows = [], searchResults = [], currentPage = 1, currentSort = { index: null, direction: 'asc' }, rowsPerPage = 20;
+        let currentFileSummary = [], displayedSummary = [], currentAnnouncerSummary = [], displayedAnnouncerSummary = [], currentExtensionSummary = [], displayedExtensionSummary = [], currentPhoneSummary = [], displayedPhoneSummary = [];
+        let columnFilters = {}; 
+        let ivrTitlesCache = {}; 
+        const excluded = ["סוג זיהוי", "מספר זיהוי", "עברי", "נקודת התחלה", "נקודת יציאה", "יציאה זמן", "אורך הקובץ", "משך הקובץ"];
 
         window.onload = function() {
             const m = document.getElementById('monthSelect');
             const d = document.getElementById('daySelect');
             for(let i=1; i<=12; i++) m.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
             for(let i=1; i<=31; i++) d.add(new Option(i.toString().padStart(2, '0'), i.toString().padStart(2, '0')));
-            fetchFilesMap();
-            updateTableHeader();
-            setupAdvancedSearchInputs();
+            fetchFilesMap(); 
         };
+
+        function setToday() {
+            const now = new Date();
+            document.getElementById('yearSelect').value = now.getFullYear();
+            document.getElementById('monthSelect').value = (now.getMonth() + 1).toString().padStart(2, '0');
+            document.getElementById('daySelect').value = now.getDate().toString().padStart(2, '0');
+        }
 
         async function fetchFilesMap() {
             try {
@@ -309,15 +430,39 @@
             } catch (e) { console.error("Map Error", e); }
         }
 
-        // --- CSV Import ---
-        function triggerCSVImport() { document.getElementById('csvFileInput').click(); }
-        
+        async function getIvrTitle(ext) {
+            if (!ext) return "";
+            const internalExt = ext.replace(/\./g, "/");
+            if (ivrTitlesCache[internalExt]) return ivrTitlesCache[internalExt];
+            const sys = document.getElementById('system_number').value;
+            const pass = document.getElementById('password').value;
+            const token = `${sys}:${pass}`;
+            const url = `https://www.call2all.co.il/ym/api/GetTextFile?token=${token}&what=ivr2:/${internalExt}/ext.ini`;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) return "";
+                const text = await response.text();
+                const match = text.match(/title=([^a-zA-Z\n\r]+)/);
+                if (match && match[1]) {
+                    const title = match[1].replace(/\\/g, "").trim();
+                    ivrTitlesCache[internalExt] = title;
+                    return title;
+                }
+                return "";
+            } catch (err) { return ""; }
+        }
+
+        function triggerCSVImport() {
+            document.getElementById('csvFileInput').click();
+        }
+
         function importCSVFile(input) {
             const file = input.files[0];
             if (!file) return;
             const reader = new FileReader();
             reader.onload = async function(e) {
-                await appendExternalData(e.target.result);
+                const text = e.target.result;
+                await appendExternalData(text);
                 input.value = ""; 
             };
             reader.readAsText(file);
@@ -331,197 +476,288 @@
             const newData = rows.slice(1).map(row => {
                 const getVal = (headerName) => {
                     const idx = headers.indexOf(headerName);
-                    return idx !== -1 ? row[idx] : "";
+                    return idx !== -1 ? row[idx] : "---";
                 };
 
                 const cleanShluha = getVal("שלוחה").replace(/\//g, ".");
+                const rawSecs = durationToSeconds(getVal("משך"));
                 const fileNum = Number(getVal("השמעה") || "").toString();
-                
-                // שליפת שדרן ותוכן מהדרייב לפי מספר השמעה, ללא תלות במה שיש ב-CSV
-                const driveData = filesMap[fileNum] || { announcer: "---", content: "---" };
+
+                // הצלבה מול הדרייב (filesMap) במקום לקחת מה-CSV המיובא
+                const fileInfo = filesMap[fileNum] || { content: "---", announcer: "---" };
 
                 let newRow = [
                     cleanShluha, 
-                    getVal("שם השלוחה") || "---",
+                    getVal("שם השלוחה"),
                     fileNum,
-                    driveData.announcer, // שדרן מהדרייב
-                    driveData.content,   // תוכן מהדרייב
-                    getVal("טלפון") || "חסוי",
-                    getVal("שם") || "---",
-                    getVal("תאריך") || "---",
-                    getVal("שעה") || "---",
-                    getVal("משך") || "00:00:00"
+                    fileInfo.announcer, // נתונים מהדרייב
+                    fileInfo.content,   // נתונים מהדרייב
+                    getVal("טלפון"),
+                    getVal("שם"),
+                    getVal("תאריך"),
+                    getVal("שעה"),
+                    getVal("משך")
                 ];
 
-                newRow._rawSeconds = durationToSeconds(newRow[9]);
+                newRow._rawSeconds = rawSecs;
                 newRow._cleanShluha = cleanShluha;
                 newRow._originalShluha = cleanShluha;
                 newRow._rawFileNum = fileNum;
-                newRow._fileAnnouncer = driveData.announcer;
-                newRow._fileContent = driveData.content;
-                newRow._rawPhone = newRow[5];
+                newRow._fileAnnouncer = fileInfo.announcer;
+                newRow._fileContent = fileInfo.content;
+                newRow._rawPhone = getVal("טלפון");
+                newRow._rawName = getVal("שם");
+
                 return newRow;
             });
 
+            if (filteredDataRows.length === 0) {
+                filteredHeaders = ["שלוחה", "שם השלוחה", "השמעה", "שדרן", "תוכן", "טלפון", "שם", "תאריך", "שעה", "משך"];
+                updateTableHeader();
+                setupAdvancedSearchInputs();
+                document.getElementById('resultsSection').classList.remove('hidden');
+                document.getElementById('placeholder').classList.add('hidden');
+            }
+
             filteredDataRows = filteredDataRows.concat(newData);
-            document.getElementById('resultsSection').classList.remove('hidden');
-            document.getElementById('placeholder').classList.add('hidden');
             applyAllFilters();
         }
 
         function durationToSeconds(hms) {
             if (!hms || !hms.includes(":")) return 0;
-            const p = hms.split(':').map(Number);
-            return p.length === 3 ? (p[0]*3600 + p[1]*60 + p[2]) : (p.length === 2 ? p[0]*60 + p[1] : 0);
+            const parts = hms.split(':').map(Number);
+            if (parts.length === 3) return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+            if (parts.length === 2) return (parts[0] * 60) + parts[1];
+            return 0;
         }
 
-        // --- Fetch from System ---
-        async function handleFetchClick() {
+        function handleFetchClick() {
+            const year = document.getElementById('yearSelect').value;
+            const month = document.getElementById('monthSelect').value;
+            const day = document.getElementById('daySelect').value;
+            if (!year || !month) { showErrorModal("יש לבחור שנה וחודש לפחות."); return; }
+            if (!day || day === "כל החודש" || day === "") document.getElementById('confirmMonthModal').style.display = 'flex';
+            else fetchYMGR();
+        }
+
+        async function fetchYMGR() {
             const sys = document.getElementById('system_number').value, pass = document.getElementById('password').value;
             const y = document.getElementById('yearSelect').value, m = document.getElementById('monthSelect').value, d = document.getElementById('daySelect').value;
-            if (!y || !m) return;
+            const btn = document.getElementById('fetchBtn'), ph = document.getElementById('placeholder');
+            const gLoader = document.getElementById('globalLoader'), resultsSection = document.getElementById('resultsSection');
             
-            document.getElementById('fetchBtn').disabled = true;
-            document.getElementById('globalLoader').classList.remove('hidden');
-            document.getElementById('placeholder').classList.add('hidden');
-
-            const path = d ? `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}-${d}.ymgr` : `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}.ymgr`;
+            btn.disabled = true; ph.classList.add('hidden'); resultsSection.classList.add('hidden'); gLoader.classList.remove('hidden');
+            
+            let path = (d && d !== "כל החודש") ? `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}-${d}.ymgr` : `Log/LogPlaybackPlayStop/LogPlaybackPlayStop.${y}-${m}.ymgr`;
             const url = `https://www.call2all.co.il/ym/api/RenderYMGRFile?token=${sys}:${pass}&wath=ivr2:/${path}&convertType=csv`;
-
+            
             try {
                 const res = await fetch(url);
                 const txt = await res.text();
-                if (res.ok && txt.includes(',')) await processSystemCSV(txt);
-            } catch (e) { console.error(e); }
-            finally {
-                document.getElementById('fetchBtn').disabled = false;
-                document.getElementById('globalLoader').classList.add('hidden');
-                document.getElementById('resultsSection').classList.remove('hidden');
-            }
+                if (res.ok && txt.includes(',')) { 
+                    await processCSV(txt); 
+                    resultsSection.classList.remove('hidden'); 
+                } 
+                else { ph.innerText = "לא נמצאו נתונים."; ph.classList.remove('hidden'); }
+            } catch (e) { ph.innerText = "שגיאת תקשורת."; ph.classList.remove('hidden'); } 
+            finally { btn.disabled = false; gLoader.classList.add('hidden'); }
         }
 
-        async function processSystemCSV(text) {
+        async function processCSV(text) {
             const rows = text.trim().split('\n').map(r => r.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
-            const h = rows[0], data = rows.slice(1);
+            const originalHeaders = rows[0], originalData = rows.slice(1);
             
-            const sI = h.findIndex(x => x.includes("שלוחה")), dI = h.findIndex(x => x.includes("שניות")), fI = h.findIndex(x => x==="קובץ"||x==="השמעה"),
-                  pI = h.findIndex(x => x.includes("טלפון")), nI = h.findIndex(x => x==="שם"), tI = h.findIndex(x => x==="תאריך"), hI = h.findIndex(x => x==="התחלה שעה");
+            const shIdx = originalHeaders.findIndex(h => h.includes("שלוחה")), 
+                  durIdx = originalHeaders.findIndex(h => h.includes("שניות")), 
+                  fileIdx = originalHeaders.findIndex(h => h === "קובץ" || h === "השמעה"),
+                  phoneIdx = originalHeaders.findIndex(h => h.includes("טלפון מחיוג") || h === "טלפון"),
+                  nameIdx = originalHeaders.findIndex(h => h === "שם" || h === "שם מחייג"),
+                  dateIdx = originalHeaders.findIndex(h => h === "תאריך"),
+                  hourIdx = originalHeaders.findIndex(h => h === "התחלה שעה");
 
-            const processed = data.map(r => {
-                const cleanSh = (r[sI]||"").replace(/\//g, ".");
-                const fileNum = Number(r[fI]||"").toString();
-                const driveData = filesMap[fileNum] || {announcer:"---", content:"---"};
-                const secs = parseInt(r[dI]) || 0;
+            filteredHeaders = ["שלוחה", "שם השלוחה", "השמעה", "שדרן", "תוכן", "טלפון", "שם", "תאריך", "שעה", "משך"];
 
-                let nr = [cleanSh, "טוען...", fileNum, driveData.announcer, driveData.content, (r[pI]||"חסוי"), (r[nI]||"---"), (r[tI]||""), (r[hI]||""), secondsToHHMMSS(secs)];
-                nr._rawSeconds = secs; nr._cleanShluha = cleanSh; nr._originalShluha = cleanSh; nr._rawFileNum = fileNum; nr._fileAnnouncer = driveData.announcer; nr._fileContent = driveData.content; nr._rawPhone = nr[5];
-                return nr;
+            const uniqueExts = [...new Set(originalData.map(row => (row[shIdx] || "").replace(/\//g, ".").trim()))].filter(e => e);
+            for (const ext of uniqueExts) await getIvrTitle(ext);
+
+            const processed = originalData.map(row => {
+                const cleanSh = (row[shIdx] || "").replace(/\//g, ".");
+                const rawSecs = parseInt(row[durIdx]) || 0;
+                const fileNum = Number(row[fileIdx] || "").toString();
+                const fileData = (cleanSh === "1" || cleanSh === "7") ? (filesMap[fileNum] || {content:"---", announcer:"---"}) : {content:"", announcer:""};
+
+                let newRow = [
+                    cleanSh,
+                    ivrTitlesCache[cleanSh.replace(/\./g, "/")] || "",
+                    fileNum,
+                    fileData.announcer,
+                    fileData.content,
+                    (row[phoneIdx] || "").trim() || "חסוי",
+                    (row[nameIdx] || "").trim() || "---",
+                    (row[dateIdx] || "").trim(),
+                    (row[hourIdx] || "").trim(),
+                    secondsToHHMMSS(rawSecs)
+                ];
+
+                newRow._rawSeconds = rawSecs;
+                newRow._cleanShluha = cleanSh;
+                newRow._originalShluha = cleanSh;
+                newRow._rawFileNum = fileNum;
+                newRow._fileAnnouncer = fileData.announcer;
+                newRow._fileContent = fileData.content;
+                newRow._rawPhone = newRow[5];
+                newRow._rawName = newRow[6];
+                return newRow;
             }).reverse();
 
-            filteredDataRows = filteredDataRows.concat(processed);
-            applyAllFilters();
-            // Async load titles
-            const uniqueExts = [...new Set(processed.map(x => x._cleanShluha))];
-            for(let e of uniqueExts) {
-                const title = await getIvrTitle(e);
-                filteredDataRows.forEach(row => { if(row._cleanShluha === e) row[1] = title; });
-            }
-            render();
+            filteredDataRows = processed;
+            searchResults = [...filteredDataRows];
+            setupAdvancedSearchInputs(); updateTableHeader(); updateSummary(); render();
         }
 
-        async function getIvrTitle(ext) {
-            if (ivrTitlesCache[ext]) return ivrTitlesCache[ext];
-            const sys = document.getElementById('system_number').value, pass = document.getElementById('password').value;
-            try {
-                const res = await fetch(`https://www.call2all.co.il/ym/api/GetTextFile?token=${sys}:${pass}&what=ivr2:/${ext.replace(/\./g, "/")}/ext.ini`);
-                const txt = await res.text();
-                const m = txt.match(/title=([^a-zA-Z\n\r]+)/);
-                const title = m ? m[1].replace(/\\/g, "").trim() : ext;
-                ivrTitlesCache[ext] = title; return title;
-            } catch { return ext; }
-        }
-
-        function secondsToHHMMSS(s) {
-            let n = parseInt(s) || 0;
-            return [Math.floor(n/3600), Math.floor((n%3600)/60), n%60].map(v => v<10?"0"+v:v).join(":");
-        }
-
-        // --- Table logic ---
         function setupAdvancedSearchInputs() {
-            document.getElementById('advancedSearchRow').innerHTML = filteredHeaders.map((h, i) => `
-                <input type="text" placeholder="${h}" onkeyup="handleAdvancedSearch(${i}, this.value)" class="px-2 py-1 bg-white border rounded-lg text-[10px]">
+            const container = document.getElementById('advancedSearchRow');
+            container.innerHTML = filteredHeaders.map((h, i) => `
+                <div class="space-y-1">
+                    <input type="text" placeholder="${h}" onkeyup="handleAdvancedSearch(${i}, this.value)" 
+                    class="w-full px-2 py-1.5 bg-white border border-slate-200 rounded-xl text-[11px] outline-none">
+                </div>
             `).join('');
         }
-        function handleAdvancedSearch(i, v) { columnFilters[i] = v.toLowerCase(); applyAllFilters(); }
-        function handleSearch() { applyAllFilters(); }
+
+        function toggleAdvancedSearch() { document.getElementById('advancedSearchRow').classList.toggle('hidden'); }
+        function handleAdvancedSearch(colIdx, value) { columnFilters[colIdx] = value.toLowerCase(); applyAllFilters(); }
+
         function applyAllFilters() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
+            const globalQuery = document.getElementById('searchInput').value.toLowerCase();
             searchResults = filteredDataRows.filter(r => {
-                if (q && !r.some(c => String(c).toLowerCase().includes(q))) return false;
-                for (let i in columnFilters) if (columnFilters[i] && !String(r[i]).toLowerCase().includes(columnFilters[i])) return false;
+                const matchesGlobal = globalQuery === "" || r.some(c => String(c).toLowerCase().includes(globalQuery));
+                if (!matchesGlobal) return false;
+                for (let colIdx in columnFilters) {
+                    if (columnFilters[colIdx] && !String(r[colIdx]).toLowerCase().includes(columnFilters[colIdx])) return false;
+                }
                 return true;
             });
             currentPage = 1; updateSummary(); render();
         }
-        function updateSummary() {
-            const total = searchResults.reduce((s, r) => s + (r._rawSeconds || 0), 0);
-            document.getElementById('totalDurationDisplay').innerText = Math.floor(total/60).toLocaleString() + " דקות";
+
+        function secondsToHHMMSS(s) {
+            let n = parseInt(s, 10); if(isNaN(n)) return "00:00:00";
+            return [Math.floor(n/3600), Math.floor((n%3600)/60), n%60].map(v => v<10?"0"+v:v).join(":");
         }
+
+        function updateSummary() {
+            const totalSecs = searchResults.reduce((s, r) => s + (r._rawSeconds || 0), 0);
+            document.getElementById('totalDurationDisplay').innerText = Math.floor(totalSecs/60).toLocaleString() + " דקות האזנה בקבצים";
+        }
+
         function updateTableHeader() {
             document.getElementById('tableHeader').innerHTML = filteredHeaders.map((h, i) => `<th onclick="sortTable(${i})" class="p-3 border-b text-center">${h}</th>`).join('');
         }
+
         function sortTable(i) {
-            searchResults.sort((a,b) => a[i] > b[i] ? 1 : -1);
+            currentSort.direction = (currentSort.index === i && currentSort.direction === 'asc') ? 'desc' : 'asc';
+            currentSort.index = i;
+            searchResults.sort((a,b) => (a[i]<b[i]?-1:1)*(currentSort.direction==='asc'?1:-1));
             render();
         }
+
         function render() {
-            const list = searchResults.filter(r => r._rawSeconds >= 5);
-            const start = (currentPage - 1) * rowsPerPage;
-            document.getElementById('tableBody').innerHTML = list.slice(start, start + rowsPerPage).map(r => `<tr>${r.map(c => `<td class="p-3 border-b text-center">${c}</td>`).join('')}</tr>`).join('');
-            document.getElementById('statsTop').innerText = `סה"כ ${list.length} שורות`;
-            const tp = Math.ceil(list.length / rowsPerPage) || 1;
+            const displayList = searchResults.filter(r => r._rawSeconds >= 5);
+            const s = (currentPage - 1) * rowsPerPage;
+            document.getElementById('tableBody').innerHTML = displayList.slice(s, s + rowsPerPage).map(r => `<tr class="hover:bg-blue-50/50">${r.map(c => `<td class="p-3 border-b text-center text-slate-700">${c}</td>`).join('')}</tr>`).join('');
+            const tp = Math.ceil(displayList.length / rowsPerPage) || 1;
             document.querySelectorAll('.pageIndicator').forEach(e => e.innerText = `דף ${currentPage} מתוך ${tp}`);
-        }
-        function prevPage() { if(currentPage > 1) { currentPage--; render(); } }
-        function nextPage() { if(currentPage < Math.ceil(searchResults.filter(r=>r._rawSeconds>=5).length/rowsPerPage)) { currentPage++; render(); } }
-        function setToday() {
-            const n = new Date();
-            document.getElementById('yearSelect').value = n.getFullYear();
-            document.getElementById('monthSelect').value = (n.getMonth()+1).toString().padStart(2, '0');
-            document.getElementById('daySelect').value = n.getDate().toString().padStart(2, '0');
+            document.getElementById('statsTop').innerText = `סה"כ ${displayList.length} שורות`;
         }
 
-        // --- Modals ---
+        function handleSearch() { applyAllFilters(); }
+        function prevPage() { if(currentPage > 1) { currentPage--; render(); } }
+        function nextPage() { if(currentPage < Math.ceil(searchResults.filter(r=>r._rawSeconds>=5).length/rowsPerPage)) { currentPage++; render(); } }
+        function updateRowsPerPage(v) { rowsPerPage = parseInt(v); currentPage = 1; render(); }
+
         function openFileSummary() {
-            const m = {};
+            const map = {};
             searchResults.forEach(r => {
-                if(r._rawFileNum && r._rawFileNum !== "NaN") {
-                    if(!m[r._rawFileNum]) m[r._rawFileNum] = {n:r._rawFileNum, a:r._fileAnnouncer, c:r._fileContent, s:0};
-                    m[r._rawFileNum].s += r._rawSeconds;
+                if(r._cleanShluha === "1" || r._cleanShluha === "7") {
+                    const f = r._rawFileNum;
+                    if(!map[f]) map[f] = { num: f, announcer: r._fileAnnouncer || "---", content: r._fileContent || "---", secs: 0 };
+                    map[f].secs += r._rawSeconds;
                 }
             });
-            const list = Object.values(m).sort((a,b) => b.s - a.s);
-            document.getElementById('fileSummaryBody').innerHTML = list.map(x => `<tr class="border-b"><td class="p-2 text-center font-bold">${x.n}</td><td class="p-2 text-center">${x.a}</td><td class="p-2 text-center">${x.c}</td><td class="p-2 text-center font-bold text-blue-700">${Math.floor(x.s/60)}</td></tr>`).join('');
-            document.getElementById('fileSummaryModal').style.display='flex';
+            currentFileSummary = Object.values(map).map(i => ({ num: i.num, announcer: i.announcer, content: i.content, minutes: Math.floor(i.secs/60) })).filter(i => i.minutes > 0).sort((a,b) => b.minutes - a.minutes);
+            displayedSummary = [...currentFileSummary]; renderFileSummary();
+            document.getElementById('fileSummaryModal').style.display = 'flex';
         }
+
+        function renderFileSummary() {
+            document.getElementById('fileSummaryBody').innerHTML = displayedSummary.map(i => `<tr class="border-b"><td class="p-2 text-center font-bold">${i.num}</td><td class="p-2 text-center">${i.announcer}</td><td class="p-2 text-center">${i.content}</td><td class="p-2 text-center font-bold text-blue-700">${i.minutes}</td></tr>`).join('');
+        }
+
         function openAnnouncerSummary() {
-            const m = {};
+            const map = {};
             searchResults.forEach(r => {
-                const a = r._fileAnnouncer;
-                if(a && a!=="---") { if(!m[a]) m[a]=0; m[a]+=r._rawSeconds; }
+                const a = r._fileAnnouncer || "---";
+                if (a && a !== "---") {
+                    if(!map[a]) map[a] = { name: a, secs: 0 };
+                    map[a].secs += r._rawSeconds;
+                }
             });
-            const list = Object.entries(m).sort((a,b) => b[1]-a[1]);
-            document.getElementById('announcerSummaryBody').innerHTML = list.map(x => `<tr class="border-b"><td class="p-3 text-center font-bold">${x[0]}</td><td class="p-3 text-center font-bold text-indigo-700">${Math.floor(x[1]/60)}</td></tr>`).join('');
-            document.getElementById('announcerSummaryModal').style.display='flex';
+            currentAnnouncerSummary = Object.values(map).map(i => ({ name: i.name, minutes: Math.floor(i.secs/60) })).sort((a,b) => b.minutes - a.minutes);
+            displayedAnnouncerSummary = [...currentAnnouncerSummary]; renderAnnouncerSummary();
+            document.getElementById('announcerSummaryModal').style.display = 'flex';
         }
-        function closeFileSummary() { document.getElementById('fileSummaryModal').style.display='none'; }
-        function closeAnnouncerSummary() { document.getElementById('announcerSummaryModal').style.display='none'; }
-        
+
+        function renderAnnouncerSummary() {
+            document.getElementById('announcerSummaryBody').innerHTML = displayedAnnouncerSummary.map(i => `<tr class="border-b"><td class="p-3 text-center font-bold">${i.name}</td><td class="p-3 text-center font-bold text-indigo-700">${i.minutes}</td></tr>`).join('');
+        }
+
+        function openExtensionSummary() {
+            const map = {};
+            searchResults.forEach(r => {
+                const ext = r._originalShluha, title = r[1];
+                if(!map[ext]) map[ext] = { name: ext, title: title, secs: 0 };
+                map[ext].secs += r._rawSeconds;
+            });
+            currentExtensionSummary = Object.values(map).map(i => ({ name: i.name, title: i.title, minutes: Math.floor(i.secs/60) })).sort((a,b) => b.minutes - a.minutes);
+            displayedExtensionSummary = [...currentExtensionSummary]; renderExtensionSummary();
+            document.getElementById('extensionSummaryModal').style.display = 'flex';
+        }
+
+        function renderExtensionSummary() {
+            document.getElementById('extensionSummaryBody').innerHTML = displayedExtensionSummary.map(i => `<tr class="border-b"><td class="p-3 text-center font-bold">${i.name}</td><td class="p-3 text-center">${i.title}</td><td class="p-3 text-center font-bold">${i.minutes}</td></tr>`).join('');
+        }
+
+        function openPhoneSummary() {
+            const map = {};
+            searchResults.forEach(r => {
+                const p = r._rawPhone;
+                if(!map[p]) map[p] = { phone: p, name: r._rawName, secs: 0 };
+                map[p].secs += r._rawSeconds;
+            });
+            currentPhoneSummary = Object.values(map).map(i => ({ phone: i.phone, name: i.name, minutes: Math.floor(i.secs/60) })).sort((a,b) => b.minutes - a.minutes);
+            displayedPhoneSummary = [...currentPhoneSummary]; renderPhoneSummary();
+            document.getElementById('phoneSummaryModal').style.display = 'flex';
+        }
+
+        function renderPhoneSummary() {
+            document.getElementById('phoneSummaryBody').innerHTML = displayedPhoneSummary.map(i => `<tr class="border-b"><td class="p-3 text-center font-bold">${i.phone}</td><td class="p-3 text-center">${i.name}</td><td class="p-3 text-center font-bold text-emerald-700">${i.minutes}</td></tr>`).join('');
+        }
+
+        function closeFileSummary() { document.getElementById('fileSummaryModal').style.display = 'none'; }
+        function closeAnnouncerSummary() { document.getElementById('announcerSummaryModal').style.display = 'none'; }
+        function closeExtensionSummary() { document.getElementById('extensionSummaryModal').style.display = 'none'; }
+        function closePhoneSummary() { document.getElementById('phoneSummaryModal').style.display = 'none'; }
+        function closeError() { document.getElementById('errorModal').style.display = 'none'; }
+        function showErrorModal(m) { document.getElementById('errorMsg').innerText = m; document.getElementById('errorModal').style.display = 'flex'; }
+        function proceedWithFetch() { document.getElementById('confirmMonthModal').style.display = 'none'; fetchYMGR(); }
+        function closeConfirmModal() { document.getElementById('confirmMonthModal').style.display = 'none'; }
+
         function exportData() {
-            const list = searchResults.filter(r => r._rawSeconds >= 5);
-            let csv = "\uFEFF" + filteredHeaders.join(",") + "\n" + list.map(r => r.join(",")).join("\n");
-            const b = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-            const a = document.createElement("a"); a.href=URL.createObjectURL(b); a.download="report.csv"; a.click();
+            const displayList = searchResults.filter(r => r._rawSeconds >= 5);
+            let csv = "\uFEFF" + filteredHeaders.join(",") + "\n" + displayList.map(r => r.join(",")).join("\n");
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = "listening_report.csv"; link.click();
         }
     </script>
 </body>
