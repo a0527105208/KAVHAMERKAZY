@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול שלוחות - ממשק ניהול</title>
+    <link class="rounded-full" rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- ספריית SheetJS לקריאה ופענוח של קבצי אקסל ישירות בדפדפן -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="translations.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Heebo:wght=300;400;700;800&display=swap');
+        
+        body { 
+            font-family: 'Heebo', sans-serif; 
+            background-image: url('https://static.wixstatic.com/media/76027d_4530781278d1453a9f4b34036a47b7e5~mv2.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            zoom: 1.25;
+        }
+
+        .glass { 
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e2e8f0;
+            border-radius: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .file-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+            border: 2px solid #edf2f7;
+            display: flex;
+            flex-direction: column;
+            text-align: center;
+            height: 100%;
+            position: relative;
+            cursor: pointer;
+            user-select: none; /* מניעת בחירת טקסט בלחיצה מהירה עם Shift */
+        }
+
+        .file-card.selected {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        .file-card.selected::after {
+            content: '✓';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #3b82f6;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 30;
+        }
+
+        .results-container {
+            max-height: 65vh; 
+            overflow-y: auto;
+            padding: 5px;
+        }
+
+        .loader {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #ffffff;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #bulkActionsBar {
+            display: none;
+            position: sticky;
+            top: 0;
+            z-index: 45;
+            background: #3b82f6;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #f1f5f9;
+            color: #64748b;
+            font-weight: 800;
+            font-size: 0.6rem;
+            padding: 0.1rem 0.35rem;
+            border-radius: 0.4rem;
+            border: 1px solid #e2e8f0;
+            z-index: 10;
+        }
+
+        .options-btn {
+            position: absolute;
+            top: 0.5rem;
+            left: 0.5rem;
+            padding: 4px;
+            color: #94a3b8;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            z-index: 20;
+        }
+
+        .options-btn:hover {
+            background: #f1f5f9;
+            color: #3b82f6;
+        }
+
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            top: 2.5rem;
+            left: 0.5rem;
+            background: white;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            min-width: 100px;
+            z-index: 50;
+            overflow: hidden;
+        }
+
+        .dropdown-menu.active { display: block; }
+
+        .dropdown-item {
+            padding: 0.5rem 0.75rem;
+            font-size: 10px;
+            font-weight: bold;
+            color: #475569;
+            text-align: right;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .dropdown-item:last-child { border-bottom: none; }
+
+        .dropdown-item:hover {
+            background: #f8fafc;
+            color: #3b82f6;
+        }
+
+        .play-btn {
+            background: #3b82f6;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
+            transition: transform 0.2s;
+        }
+
+        .play-btn:hover {
+            transform: scale(1.1);
+            background: #2563eb;
+        }
+
+        .play-btn.is-file {
+            cursor: pointer;
+        }
+
+        #modalOverlay, #subDirsModalOverlay, #textFileModalOverlay, #ymgrModalOverlay, #mergeModalOverlay, #uploadModalOverlay, #bulkSelectModalOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(2px);
+        }
+
+        #processingOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.8);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dir-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 70px;
+        }
+        .dir-card:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        /* YMGR Table Styling */
+        .ymgr-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .ymgr-table th {
+            background-color: #f1f5f9;
+            color: #475569;
+            font-weight: 800;
+            text-align: right;
+            padding: 10px;
+            border: 1px solid #e2e8f0;
+        }
+        .ymgr-table td {
+            padding: 8px 10px;
+            border: 1px solid #e2e8f0;
+            color: #1e293b;
+        }
+        .ymgr-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+
+        /* Merge/Upload List Styling */
+        .list-item-drag {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="globalAudioPlayer" class="hidden"></audio>
+
+    <div id="processingOverlay">
+        <div class="loader !w-12 !h-12 !border-blue-600 !border-t-transparent mb-4"></div>
+        <p class="font-bold text-blue-800" id="processingText">מעבד...</p>
+    </div>
+
+    <div id="modalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-sm w-full shadow-2xl">
+            <h3 id="modalTitle" class="text-lg font-bold text-slate-800 mb-3"></h3>
+            <input type="text" id="targetExtensionInput" placeholder="לדוגמה: 1/2" class="input-field text-center font-bold mb-4">
+            <div class="flex gap-2">
+                <button id="modalConfirmBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-xl font-bold hover:bg-blue-700">אישור</button>
+                <button onclick="closeModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודל בחירת קבצים מרובים משופר (אקסל / הדבקה) -->
+    <div id="bulkSelectModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-md w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800 mb-2 text-right px-1">בחירת קבצים מרובים</h3>
+            <p class="text-[10px] text-slate-500 mb-4 text-right px-1">העלה קובץ אקסל (טור A) או הדבק רשימת מספרים (כל מספר בשורה) לסימון הקבצים.</p>
+            
+            <div class="mb-4">
+                <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">טעינה מקובץ אקסל / CSV</label>
+                <input type="file" id="bulkSelectFileInput" accept=".xlsx, .xls, .csv, .txt" class="input-field text-center !py-1.5" onchange="handleExcelImport(event)">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">רשימת מספרי קבצים להדבקה או עריכה</label>
+                <textarea id="bulkSelectNumbersInput" placeholder="לדוגמה:&#10;001&#10;002&#10;003" class="w-full h-36 p-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-xs outline-none resize-none" dir="ltr"></textarea>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="applyExcelSelection()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 text-xs">בחר קבצים</button>
+                <button onclick="closeBulkSelectModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200 text-xs">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודל העלאת קבצים חדש -->
+    <div id="uploadModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-md w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800 mb-2 text-right px-1">העלאת קבצים לשלוחה</h3>
+            <p class="text-[10px] text-slate-500 mb-4 text-right px-1">בחר קבצים וסדר אותם (העלאה מתבצעת מהאחרון לראשון)</p>
+            
+            <input type="file" id="fileUploadInput" multiple class="hidden" onchange="handleFileSelect(event)">
+            <button onclick="document.getElementById('fileUploadInput').click()" class="w-full border-2 border-dashed border-blue-200 rounded-xl py-4 mb-4 text-blue-600 font-bold hover:bg-blue-50 transition-colors">
+                לחץ לבחירת קבצים מהמחשב
+            </button>
+
+            <div id="uploadFilesList" class="max-h-[30vh] overflow-y-auto mb-4 border rounded-xl p-2 bg-slate-50">
+                <!-- רשימת קבצים להעלאה תיטען כאן -->
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="startFilesUpload()" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700">התחל העלאה</button>
+                <button onclick="closeUploadModal()" class="flex-1 bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- חלונית עריכת קובץ טקסט -->
+    <div id="textFileModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] max-w-2xl w-full shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="textFileModalTitle" class="text-lg font-bold text-slate-800"></h3>
+                <button onclick="closeTextFileModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <textarea id="textFileContent" class="w-full h-[45vh] p-4 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm outline-none resize-none mb-4" dir="ltr"></textarea>
+            <div class="flex gap-2">
+                <button id="saveTextFileBtn" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+                    שמור שינויים
+                </button>
+                <button onclick="closeTextFileModal()" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold hover:bg-slate-200 transition-colors">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- חלונית הצגת קובץ YMGR -->
+    <div id="ymgrModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] max-w-4xl w-full shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <h3 id="ymgrModalTitle" class="text-lg font-bold text-slate-800"></h3>
+                <button onclick="closeYmgrModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="ymgrContent" class="w-full max-h-[60vh] overflow-auto border border-slate-100 rounded-xl mb-4 bg-slate-50">
+                <!-- טבלה תיווצר כאן -->
+            </div>
+            <div class="flex gap-2">
+                <button id="downloadYmgrCsvBtn" class="flex-1 bg-green-600 text-white py-2.5 rounded-xl font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    הורדה (CSV)
+                </button>
+                <button onclick="closeYmgrModal()" class="flex-1 bg-slate-100 text-slate-600 py-2.5 rounded-xl font-bold hover:bg-slate-200 transition-colors">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- חלונית שלוחות  -->
+    <div id="subDirsModalOverlay">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] max-w-2xl w-full shadow-2xl relative">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-3">
+                    <button onclick="goUpOneLevel()" class="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors" title="חזרה לשלוחה מעל">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l5-5m-5 5l5 5"/>
+                        </svg>
+                    </button>
+                    <h3 class="text-lg font-bold text-slate-800">שלוחה קודמת</h3>
+                </div>
+                <button onclick="closeSubDirsModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div id="subDirsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[60vh] overflow-y-auto p-1"></div>
+            <div id="noSubDirsMsg" class="hidden text-center py-10 text-slate-400 font-bold">אין שלוחות פנימיות להצגה</div>
+            <div class="mt-4 flex justify-center">
+                <button onclick="closeSubDirsModal()" class="bg-slate-100 text-slate-600 px-8 py-2 rounded-xl font-bold hover:bg-slate-200">סגור</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- מודל מיזוג קבצים -->
+    <div id="mergeModalOverlay" class="hidden fixed inset-0 bg-black/40 z-[100] items-center justify-center backdrop-blur-[2px]">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-md w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800 mb-2 text-right px-1">מיזוג קבצים נבחרים</h3>
+            <p class="text-[10px] text-slate-500 mb-4 text-right px-1">גרור או השתמש בחצים כדי לקבוע את סדר המיזוג</p>
+            
+            <div id="mergeFilesList" class="max-h-[30vh] overflow-y-auto mb-4 border rounded-xl p-2 bg-slate-50">
+                <!-- רשימת קבצים למיזוג תיטען כאן -->
+            </div>
+
+            <div class="space-y-3 bg-slate-50 p-3 rounded-xl border border-slate-200 mb-4">
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">אורך שקט (שניות)</label>
+                        <input type="number" step="0.1" id="mergeSilenceLength" value="0.5" class="input-field text-center font-bold !py-1.5">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">סף שקט (%)</label>
+                        <input type="number" step="0.1" id="mergeSilenceThreshold" value="1" class="input-field text-center font-bold !py-1.5">
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">שם הקובץ הסופי (אופציונלי)</label>
+                        <input type="text" id="mergeFileNameInput" placeholder="למשל: שיעור_מאוחד" class="input-field text-center font-bold !py-2">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">שלוחת יעד להעלאה (אופציונלי)</label>
+                        <input type="text" id="mergeUploadTarget" placeholder="למשל: 5" class="input-field text-center font-bold !py-2">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <div class="flex gap-2">
+                    <button id="mergeDownloadBtn" onclick="processMergeAction(false)" class="flex-1 bg-green-600 text-white py-2.5 rounded-xl font-bold hover:bg-green-700 text-xs">מיזוג והורדה</button>
+                    <button id="mergeUploadBtn" onclick="processMergeAction(true)" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl font-bold hover:bg-blue-700 text-xs">מיזוג והעלאה</button>
+                </div>
+                <button onclick="closeMergeModal()" class="w-full bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="silenceModalOverlay" class="hidden fixed inset-0 bg-black/40 z-[100] items-center justify-center backdrop-blur-[2px]">
+        <div class="modal-content bg-white p-6 rounded-[1.25rem] text-center max-w-sm w-full shadow-2xl">
+            <h3 class="text-lg font-bold text-slate-800 mb-3">הסרת רווח מהקובץ</h3>
+            <p class="text-[10px] text-slate-500 mb-3">ציין אורך שקט, סף שקט ושלוחת יעד להעלאה</p>
+            <div class="space-y-3">
+                <div class="flex gap-2">
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">אורך שקט (שניות)</label>
+                        <input type="number" step="0.1" id="silenceLengthInput" value="0.5" placeholder="שניות" class="input-field text-center font-bold !py-1.5">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-[8px] font-bold text-slate-400 mb-0.5 text-right px-1">סף שקט (אחוז)</label>
+                        <input type="number" step="0.1" id="silenceThresholdInput" value="1" placeholder="אחוז" class="input-field text-center font-bold !py-1.5">
+                    </div>
+                </div>
+                <input type="text" id="uploadTargetInput" placeholder="שלוחת יעד (למשל: 5)" class="input-field text-center font-bold">
+            </div>
+            <div class="flex flex-col gap-2 mt-4">
+                <div class="flex gap-2">
+                    <button id="silenceConfirmBtn" class="flex-1 bg-orange-600 text-white py-2 rounded-xl font-bold hover:bg-orange-700 text-xs">הורדה</button>
+                    <button id="silenceUploadBtn" class="flex-1 bg-blue-600 text-white py-2 rounded-xl font-bold hover:bg-blue-700 text-xs">העלאה לשלוחה</button>
+                </div>
+                <button onclick="closeSilenceModal()" class="w-full bg-slate-100 text-slate-600 py-2 rounded-xl font-bold hover:bg-slate-200">ביטול</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass max-w-[98%] w-full rounded-[2.5rem] p-6 space-y-5 my-4">
+        
+        <div class="flex flex-col items-center">
+            <a href="index.html" title="חזרה לדף הבית">
+                <img src="https://lh3.googleusercontent.com/a-/ALV-UjUTwZD_mjMz7ult3rH-xw7KQHK4qtnHEsAv2C_RWpnzq1lVwYo=s240-p-k-rw-no" alt="Profile" class="w-14 h-14 rounded-full border-4 border-white shadow-lg mb-2 transition-transform hover:scale-105">
+            </a>
+            <h1 class="text-xl font-bold text-slate-800">ניהול קבצים</h1>
+            <p class="text-slate-500 font-bold tracking-wide uppercase text-[9px]">נבנה ופותח על ידי יצחק לרנר עבור הקו המרכזי </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 bg-white/40 p-4 rounded-3xl border border-white/50">
+            <div><label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">מספר מערכת</label><input type="text" id="systemNumber" value="033137787" class="input-field text-center font-bold text-xs py-2"></div>
+            <div><label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">סיסמה</label><input type="password" id="password" value="8549052" class="input-field text-center font-bold text-xs py-2"></div>
+            <div><label class="block text-[9px] font-bold text-slate-500 mb-1 px-1">שלוחה</label><input type="text" id="extension" value="6/7" class="input-field text-center font-bold text-xs py-2"></div>
+        </div>
+
+        <input type="hidden" id="filesFromInput" value="0">
+
+        <button onclick="fetchData()" id="mainBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-2xl shadow-md transition-all active:scale-95 text-sm flex items-center justify-center gap-2">
+            <span>טען שלוחה</span>
+        </button>
+
+        <div id="resultsWrapper" class="hidden space-y-3">
+            
+            <div id="bulkActionsBar" class="flex items-center justify-between">
+                <div class="text-xs font-bold">נבחרו <span id="selectedCount">0</span> קבצים</div>
+                <div class="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                    <button onclick="bulkDownload()" class="whitespace-nowrap bg-white text-blue-600 px-2 py-1 rounded-lg text-[9px] font-bold shadow-sm">הורדה</button>
+                    <button id="bulkSilenceBtn" onclick="bulkSilenceAction()" class="whitespace-nowrap bg-white text-orange-600 px-2 py-1 rounded-lg text-[9px] font-bold shadow-sm">הסרת רווח</button>
+                    <button onclick="bulkAction('copy')" class="whitespace-nowrap bg-white text-blue-600 px-2 py-1 rounded-lg text-[9px] font-bold shadow-sm">העתקה</button>
+                    <button onclick="bulkAction('move')" class="whitespace-nowrap bg-white text-blue-600 px-2 py-1 rounded-lg text-[9px] font-bold shadow-sm">העברה</button>
+                    <button onclick="openMergeModal()" class="whitespace-nowrap bg-white text-green-600 px-2 py-1 rounded-lg text-[9px] font-bold shadow-sm">מיזוג</button>
+                    <button onclick="bulkAction('delete')" class="whitespace-nowrap bg-white text-red-600 px-2 py-1 rounded-lg text-[9px] font-bold shadow-sm">מחיקה</button>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/60 p-2.5 rounded-2xl border border-white/80 shadow-sm">
+                <div class="flex items-center gap-1.5 flex-1 flex-wrap">
+                    <!-- כפתור בחירה מרובה מחליף את שלושת הלחצנים הקודמים -->
+                    <button onclick="openBulkSelectModal()" class="text-[10px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 transition-colors hover:bg-blue-100 flex items-center gap-1" title="בחירת קבצים באמצעות רשימה או קובץ אקסל">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        בחירת קבצים מרובים
+                    </button>
+                    <span id="rangeLabel" class="text-[10px] text-slate-600 font-bold bg-white px-2 py-1 rounded-lg border border-slate-100"></span>
+                    <span id="fileCount" class="text-[10px] text-blue-600 font-extrabold bg-blue-50 px-2 py-1 rounded-lg border border-blue-100">0</span>
+                </div>
+
+                <div id="centerExtInfo" class="flex items-center gap-4 flex-1 text-center bg-white/40 px-4 py-1 rounded-2xl border border-white/40 min-w-[150px]">
+                    <button id="subDirsNavBtn" onclick="openSubDirsModal()" class="flex items-center gap-1 text-[9px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50/50 px-3 py-1 rounded-full border border-blue-100 transition-all hover:bg-blue-100">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        ניווט
+                    </button>
+                    <div class="flex flex-col flex-1">
+                        <span id="extTitle" class="font-extrabold text-blue-800 text-xs"></span>
+                        <span id="extType" class="text-slate-500 font-bold text-[9px] opacity-75"></span>
+                    </div>
+                    <!-- כפתור העלאה חדש בצד שמאל -->
+                    <button onclick="openUploadModal()" class="flex items-center gap-1 text-[9px] font-bold text-green-600 hover:text-green-800 bg-green-50/50 px-3 py-1 rounded-full border border-green-100 transition-all hover:bg-green-100">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0l-4 4m4-4v12"/></svg>
+                        העלאה
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 flex-1 justify-end">
+                    <div class="flex items-center gap-1">
+                        <button onclick="changePage(-1)" id="prevBtn" class="bg-white border p-1 rounded-lg hover:bg-slate-50 transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M9 5l7 7-7 7"/></svg></button>
+                        <button onclick="changePage(1)" id="nextBtn" class="bg-white border p-1 rounded-lg hover:bg-slate-50 transition-colors"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="3" d="M15 19l-7-7 7-7"/></svg></button>
+                    </div>
+                    <select id="filesLimitInput" onchange="fetchData()" class="text-[10px] font-bold border rounded-lg p-1 bg-white outline-none">
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="250">250</option>
+                        <option value="500">500</option>
+                        <option value="1000">1000</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="results-container">
+                <div id="fileGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 pb-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- הודעות חיווי זמניות (Toast) -->
+    <div id="toast" class="fixed bottom-5 left-5 bg-gray-900 text-white px-4 py-2.5 rounded-lg text-sm shadow-xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-[150] pointer-events-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        <span id="toastMsg">הועתק בהצלחה!</span>
+    </div>
+
+    <script>
+        let currentFiles = [];
+        let selectedFiles = new Set();
+        let lastSelectedIndex = null; // מעקב אחר הקובץ האחרון שסומן עבור תכונת ה-Shift+Click
+        let mergeFilesOrder = [];
+        let pendingUploadFiles = []; // קבצים להעלאה
+        let currentlyPlayingIndex = null;
+        const CONTACTS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSkWP3PGv8y7-gfW6lG6mPy7P7gVrKIlBw6qcyjaqdM46cP60OVZO_8lDb28t6I-zGV9bIdiF-m3ApD/pub?gid=0&single=true&output=csv";
+        let contactsMap = new Map();
+
+        async function loadContacts() {
+            try {
+                const res = await fetch(CONTACTS_URL);
+                const csv = await res.text();
+                csv.split('\n').forEach(line => {
+                    const cols = line.split(',');
+                    if (cols.length >= 4) {
+                        const p = cols[0].trim().replace(/[^0-9]/g, '');
+                        const n = cols[3].trim();
+                        if (p && n) contactsMap.set(p, n);
+                    }
+                });
+            } catch (e) {}
+        }
+
+        // פתיחה וסגירה של חלונית בחירה מרובה
+        function openBulkSelectModal() {
+            document.getElementById('bulkSelectFileInput').value = "";
+            document.getElementById('bulkSelectNumbersInput').value = "";
+            document.getElementById('bulkSelectModalOverlay').style.display = 'flex';
+        }
+
+        function closeBulkSelectModal() {
+            document.getElementById('bulkSelectModalOverlay').style.display = 'none';
+        }
+
+        // קריאה ועיבוד של קובץ האקסל / CSV
+        function handleExcelImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = "קורא קובץ...";
+
+            const reader = new FileReader();
+            const extension = file.name.split('.').pop().toLowerCase();
+
+            if (extension === 'xlsx' || extension === 'xls') {
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        // קבלת נתונים כמערך של מערכים (שורות ועמודות)
+                        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                        
+                        const extractedNumbers = [];
+                        rows.forEach(row => {
+                            // עמודה A היא האינדקס 0
+                            if (row && row[0] !== undefined && row[0] !== null) {
+                                const val = String(row[0]).trim().replace(/[^0-9]/g, '');
+                                if (val) extractedNumbers.push(val);
+                            }
+                        });
+
+                        document.getElementById('bulkSelectNumbersInput').value = extractedNumbers.join('\n');
+                        showToast(`נטענו ${extractedNumbers.length} שורות מקובץ אקסל`);
+                    } catch (err) {
+                        alert('שגיאה בפענוח קובץ האקסל.');
+                    } finally {
+                        document.getElementById('processingOverlay').style.display = 'none';
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                // קבצי CSV או טקסט פשוט
+                reader.onload = function(e) {
+                    try {
+                        const text = e.target.result;
+                        const lines = text.split('\n');
+                        const extractedNumbers = [];
+                        lines.forEach(line => {
+                            // לקיחת העמודה הראשונה במידה וזה פסיקים
+                            const firstCol = line.split(',')[0].trim().replace(/[^0-9]/g, '');
+                            if (firstCol) extractedNumbers.push(firstCol);
+                        });
+                        document.getElementById('bulkSelectNumbersInput').value = extractedNumbers.join('\n');
+                        showToast(`נטענו ${extractedNumbers.length} שורות מהקובץ`);
+                    } catch (err) {
+                        alert('שגיאה בקריאת הקובץ.');
+                    } finally {
+                        document.getElementById('processingOverlay').style.display = 'none';
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        // יישום הבחירה בפועל על קבצי המערכת
+        function applyExcelSelection() {
+            const rawText = document.getElementById('bulkSelectNumbersInput').value;
+            const targetNumbers = new Set(
+                rawText.split('\n')
+                    .map(line => line.trim().replace(/[^0-9]/g, ''))
+                    .filter(val => val !== "")
+            );
+
+            if (targetNumbers.size === 0) {
+                alert('נא להזין או להעלות לפחות מספר קובץ אחד תקין.');
+                return;
+            }
+
+            let foundCount = 0;
+            currentFiles.forEach((file, i) => {
+                const isSpecial = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
+                if (isSpecial) return;
+
+                const fileNum = file.name.replace(/\.[^/.]+$/, "").trim();
+                const normalizedFileNum = parseInt(fileNum);
+
+                // התאמה מדויקת או התאמה כמספר שלם (להתמודד עם אפסים מובילים באקסל)
+                const isMatch = targetNumbers.has(fileNum) || [...targetNumbers].some(tn => parseInt(tn) === normalizedFileNum);
+
+                if (isMatch) {
+                    selectedFiles.add(i);
+                    const card = document.getElementById(`card-${i}`);
+                    if (card) card.classList.add('selected');
+                    foundCount++;
+                }
+            });
+
+            updateBulkBar();
+            closeBulkSelectModal();
+
+            if (foundCount > 0) {
+                showToast(`סומנו ${foundCount} קבצים בהצלחה!`);
+            } else {
+                alert('לא נמצאו קבצים מתאימים ברשימה התואמים למספרים שהזנת.');
+            }
+        }
+
+        // ניהול העלאת קבצים
+        function openUploadModal() {
+            pendingUploadFiles = [];
+            renderUploadList();
+            document.getElementById('uploadModalOverlay').style.display = 'flex';
+        }
+
+        function closeUploadModal() {
+            document.getElementById('uploadModalOverlay').style.display = 'none';
+        }
+
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            pendingUploadFiles = [...pendingUploadFiles, ...files];
+            renderUploadList();
+            e.target.value = ""; // איפוס למקרה של בחירה חוזרת
+        }
+
+        function renderUploadList() {
+            const list = document.getElementById('uploadFilesList');
+            list.innerHTML = "";
+            if (pendingUploadFiles.length === 0) {
+                list.innerHTML = `<p class="text-[10px] text-slate-400 py-4 font-bold">לא נבחרו קבצים</p>`;
+                return;
+            }
+            pendingUploadFiles.forEach((file, i) => {
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="list-item-drag">
+                        <div class="flex flex-col gap-1">
+                            <button onclick="moveUploadItem(${i}, -1)" class="p-1 hover:bg-slate-200 rounded text-slate-500 ${i === 0 ? 'opacity-20 cursor-not-allowed' : ''}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                            </button>
+                            <button onclick="moveUploadItem(${i}, 1)" class="p-1 hover:bg-slate-200 rounded text-slate-500 ${i === pendingUploadFiles.length - 1 ? 'opacity-20 cursor-not-allowed' : ''}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-700 truncate flex-1 text-right">${file.name}</span>
+                        <button onclick="removeUploadItem(${i})" class="text-red-400 hover:text-red-600 p-1">
+                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                `);
+            });
+        }
+
+        function moveUploadItem(index, dir) {
+            const newIndex = index + dir;
+            if (newIndex < 0 || newIndex >= pendingUploadFiles.length) return;
+            const temp = pendingUploadFiles[index];
+            pendingUploadFiles[index] = pendingUploadFiles[newIndex];
+            pendingUploadFiles[newIndex] = temp;
+            renderUploadList();
+        }
+
+        function removeUploadItem(index) {
+            pendingUploadFiles.splice(index, 1);
+            renderUploadList();
+        }
+
+        async function startFilesUpload() {
+            if (pendingUploadFiles.length === 0) {
+                alert('בחר קבצים תחילה');
+                return;
+            }
+
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            
+            document.getElementById('processingOverlay').style.display = 'flex';
+            
+            // העלאה מהאחרון לראשון כפי שהתבקש
+            const filesToUpload = [...pendingUploadFiles].reverse();
+
+            try {
+                for (let i = 0; i < filesToUpload.length; i++) {
+                    const file = filesToUpload[i];
+                    document.getElementById('processingText').innerText = `מעלה (${i + 1}/${filesToUpload.length}): ${file.name}`;
+                    
+                    const formData = new FormData();
+                    formData.append('token', `${system}:${pass}`);
+                    const cleanExt = ext.startsWith('/') ? ext : `/${ext}`;
+                    formData.append('path', `ivr2:${cleanExt}/`);
+                    formData.append('autoNumbering', '1');
+                    formData.append('convertAudio', '1');
+                    formData.append('qqfile', file);
+
+                    const res = await fetch('https://www.call2all.co.il/ym/api/UploadFile', { method: 'POST', body: formData });
+                    const result = await res.json();
+                    
+                    if (result.responseStatus !== 'OK') {
+                        throw new Error(`העלאת ${file.name} נכשלה: ${result.message}`);
+                    }
+                    // השהייה קלה למניעת עומס
+                    await new Promise(r => setTimeout(r, 300));
+                }
+                
+                alert('כל הקבצים הועלו בהצלחה!');
+                closeUploadModal();
+                await fetchData();
+            } catch (e) {
+                alert(e.message || 'שגיאה בתהליך ההעלאה');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        function playFile(e, index) {
+            e.stopPropagation(); 
+            const file = currentFiles[index];
+            const isIni = file.name.toLowerCase().endsWith('.ini');
+            const isYmgr = file.name.toLowerCase().endsWith('.ymgr');
+            
+            if (isIni) {
+                openTextFileEditor(index);
+                return;
+            }
+
+            if (isYmgr) {
+                openYmgrViewer(index);
+                return;
+            }
+
+            const audio = document.getElementById('globalAudioPlayer');
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            
+            const fileUrl = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
+
+            if (currentlyPlayingIndex === index) {
+                if (!audio.paused) {
+                    audio.pause();
+                    updatePlayIcon(index, false);
+                } else {
+                    audio.play();
+                    updatePlayIcon(index, true);
+                }
+            } else {
+                if (currentlyPlayingIndex !== null) updatePlayIcon(currentlyPlayingIndex, false);
+                audio.src = fileUrl;
+                audio.play();
+                currentlyPlayingIndex = index;
+                updatePlayIcon(index, true);
+            }
+
+            audio.onended = () => {
+                updatePlayIcon(index, false);
+                currentlyPlayingIndex = null;
+            };
+        }
+
+        async function openTextFileEditor(index) {
+            const file = currentFiles[index];
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `טוען את ${file.name}...`;
+
+            const url = `https://www.call2all.co.il/ym/api/GetTextFile?token=${system}:${pass}&what=ivr2:${ext}/${file.name}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.responseStatus === 'OK') {
+                    document.getElementById('textFileModalTitle').innerText = file.name;
+                    document.getElementById('textFileContent').value = data.contents || "";
+                    document.getElementById('textFileModalOverlay').style.display = 'flex';
+                    
+                    document.getElementById('saveTextFileBtn').onclick = async () => {
+                        await saveTextFile(file.name, document.getElementById('textFileContent').value);
+                    };
+                } else {
+                    alert('שגיאה בטעינת הקובץ: ' + (data.message || 'שגיאה לא ידועה'));
+                }
+            } catch (e) {
+                alert('שגיאה בתקשורת עם השרת');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        async function openYmgrViewer(index) {
+            const file = currentFiles[index];
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `טוען דוח ${file.name}...`;
+
+            const url = `https://www.call2all.co.il/ym/api/RenderYMGRFile?token=${system}:${pass}&wath=ivr2:/${ext}/${file.name}&convertType=html`;
+
+            try {
+                const res = await fetch(url);
+                const htmlText = await res.text();
+                
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlText, 'text/html');
+                const title = doc.querySelector('h1')?.innerText || file.name;
+                const table = doc.querySelector('table');
+
+                if (table) {
+                    table.className = "ymgr-table";
+                    document.getElementById('ymgrModalTitle').innerText = title;
+                    document.getElementById('ymgrContent').innerHTML = "";
+                    document.getElementById('ymgrContent').appendChild(table);
+                    document.getElementById('ymgrModalOverlay').style.display = 'flex';
+
+                    document.getElementById('downloadYmgrCsvBtn').onclick = () => {
+                        downloadTableAsCsv(table, title);
+                    };
+                } else {
+                    alert('לא נמצאה טבלה בקובץ המבוקש');
+                }
+            } catch (e) {
+                alert('שגיאה בטעינת דוח YMGR');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        function downloadTableAsCsv(table, filename) {
+            let csv = [];
+            const rows = table.querySelectorAll("tr");
+            
+            for (let i = 0; i < rows.length; i++) {
+                let row = [], cols = rows[i].querySelectorAll("td, th");
+                for (let j = 0; j < cols.length; j++) 
+                    row.push('"' + cols[j].innerText.replace(/"/g, '""') + '"');
+                csv.push(row.join(","));
+            }
+
+            const csvContent = "\uFEFF" + csv.join("\n");
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${filename}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        async function saveTextFile(fileName, content) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `שומר את ${fileName}...`;
+
+            const url = `https://www.call2all.co.il/ym/api/UploadTextFile?token=${system}:${pass}&what=ivr2:${ext}/${fileName}&contents=${encodeURIComponent(content)}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.responseStatus === 'OK') {
+                    alert('הקובץ נשמר בהצלחה!');
+                    closeTextFileModal();
+                    await fetchData();
+                } else {
+                    alert('השמירה נכשלה: ' + (data.message || 'שגיאה לא ידועה'));
+                }
+            } catch (e) {
+                alert('שגיאה בשמירת הקובץ');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        function closeTextFileModal() {
+            document.getElementById('textFileModalOverlay').style.display = 'none';
+        }
+
+        function closeYmgrModal() {
+            document.getElementById('ymgrModalOverlay').style.display = 'none';
+        }
+
+        function updatePlayIcon(index, isPlaying) {
+            const btn = document.querySelector(`#card-${index} .play-btn`);
+            if (!btn) return;
+            const file = currentFiles[index];
+            const isSpecialFile = file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr');
+            if (isSpecialFile) return;
+
+            if (isPlaying) {
+                btn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`;
+                btn.classList.add('bg-orange-500');
+            } else {
+                btn.innerHTML = `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+                btn.classList.remove('bg-orange-500');
+            }
+        }
+
+        // אפשרות משודרגת: תמיכה בסימון רגיל או בסימון טווח באמצעות Shift+Click
+        function toggleFile(index, event) {
+            const card = document.getElementById(`card-${index}`);
+            
+            // בדיקה האם המשתמש לחץ על Shift ויש קובץ קודם שסומן
+            if (event && event.shiftKey && lastSelectedIndex !== null) {
+                const start = Math.min(lastSelectedIndex, index);
+                const end = Math.max(lastSelectedIndex, index);
+                
+                // קביעה האם לסמן או לבטל סימון לפי הסטטוס של הקובץ האחרון שעליו לחצו
+                const shouldSelect = !selectedFiles.has(index);
+                
+                for (let i = start; i <= end; i++) {
+                    const currentFile = currentFiles[i];
+                    // מניעת סימון קבצים שאינם קבצי שמע (כמו ini ו-ymgr) בבחירה המרובה
+                    const isSpecial = currentFile.name.toLowerCase().endsWith('.ini') || currentFile.name.toLowerCase().endsWith('.ymgr');
+                    if (isSpecial) continue;
+
+                    const targetCard = document.getElementById(`card-${i}`);
+                    if (targetCard) {
+                        if (shouldSelect) {
+                            selectedFiles.add(i);
+                            targetCard.classList.add('selected');
+                        } else {
+                            selectedFiles.delete(i);
+                            targetCard.classList.remove('selected');
+                        }
+                    }
+                }
+            } else {
+                // לחיצה רגילה ללא Shift - סימון או ביטול סימון בודד
+                if (selectedFiles.has(index)) {
+                    selectedFiles.delete(index);
+                    card.classList.remove('selected');
+                } else {
+                    selectedFiles.add(index);
+                    card.classList.add('selected');
+                }
+                lastSelectedIndex = index; // שמירת האינדקס לטובת שימוש עתידי ב-Shift
+            }
+            updateBulkBar();
+        }
+
+        function updateBulkBar() {
+            const bar = document.getElementById('bulkActionsBar');
+            const count = document.getElementById('selectedCount');
+            const bulkSilenceBtn = document.getElementById('bulkSilenceBtn');
+            
+            count.innerText = selectedFiles.size;
+            bar.style.display = selectedFiles.size > 0 ? 'flex' : 'none';
+
+            let hasSpecialFileSelected = false;
+            selectedFiles.forEach(idx => {
+                const file = currentFiles[idx];
+                if (file.name.toLowerCase().endsWith('.ini') || file.name.toLowerCase().endsWith('.ymgr')) {
+                    hasSpecialFileSelected = true;
+                }
+            });
+
+            if (hasSpecialFileSelected) {
+                bulkSilenceBtn.classList.add('opacity-50');
+                bulkSilenceBtn.disabled = true;
+                bulkSilenceBtn.style.cursor = 'not-allowed';
+            } else {
+                bulkSilenceBtn.classList.remove('opacity-50');
+                bulkSilenceBtn.disabled = false;
+                bulkSilenceBtn.style.cursor = 'pointer';
+            }
+        }
+
+        function toggleDropdown(e, index) {
+            e.stopPropagation();
+            const allDropdowns = document.querySelectorAll('.dropdown-menu');
+            allDropdowns.forEach((d) => {
+                if(d.id !== `dropdown-${index}`) d.classList.remove('active');
+            });
+            document.getElementById(`dropdown-${index}`).classList.toggle('active');
+        }
+
+        document.body.addEventListener('click', () => {
+            document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active'));
+        });
+
+        async function singleAction(e, action, index) {
+            e.preventDefault();
+            e.stopPropagation();
+            const file = currentFiles[index];
+            document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active'));
+            
+            if (action === 'download') { downloadFile(index); return; }
+
+            if (action === 'removeSilence') {
+                openSilenceModal(async (silenceVal, thresholdVal, uploadPath) => {
+                    const threshold = parseFloat(thresholdVal) / 100;
+                    if (uploadPath) {
+                        await processAndUploadWithSilence(index, parseFloat(silenceVal), threshold, uploadPath);
+                    } else {
+                        await processAndDownloadWithSilence(index, parseFloat(silenceVal), threshold);
+                    }
+                });
+                return;
+            }
+
+            if (action === 'delete') {
+                const result = await executeFileAction('delete', file.name);
+                if (result && result.responseStatus === 'OK') await fetchData();
+                else alert('המחיקה נכשלה');
+                return;
+            }
+
+            if (action === 'copy' || action === 'move') {
+                openModal(action === 'copy' ? 'העתקת קובץ' : 'העברת קובץ', async (target) => {
+                    const result = await executeFileAction(action, file.name, target);
+                    if (result && result.responseStatus === 'OK') await fetchData();
+                    else alert('הפעולה נכשלה');
+                });
+                return;
+            }
+        }
+
+        async function processAndDownloadWithSilence(index, silenceSec, thresholdVal) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            const file = currentFiles[index];
+            const url = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
+            
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `מעבד את ${file.name}...`;
+
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                const processedBuffer = removeSilenceFromBuffer(audioBuffer, silenceSec, thresholdVal);
+                const wavBlob = bufferToWav(processedBuffer);
+                const downloadUrl = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = file.name.toLowerCase().endsWith('.wav') ? file.name : `${file.name.replace(/\.[^/.]+$/, "")}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(downloadUrl);
+            } catch (e) { alert('שגיאה בעיבוד הקובץ'); } 
+            finally { document.getElementById('processingOverlay').style.display = 'none'; }
+        }
+
+        function getDisplayedFileName(index) {
+            const file = currentFiles[index];
+            const num = file.name.replace(/\.[^/.]+$/, "");
+            const cleanP = file.phone ? file.phone.replace(/[^0-9]/g, '') : "";
+            const contactName = contactsMap.get(cleanP);
+            const metaTitle = file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : null;
+            
+            const baseName = contactName || metaTitle || num;
+            return `${baseName}.wav`;
+        }
+
+        async function processAndUploadWithSilence(index, silenceSec, thresholdVal, targetExt) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const sourceExt = document.getElementById('extension').value.trim();
+            const file = currentFiles[index];
+            
+            const displayedName = getDisplayedFileName(index);
+            const downloadUrl = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/sourceExt/${file.name}`;
+            
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `מעבד ומעלה את ${displayedName}...`;
+
+            try {
+                const response = await fetch(downloadUrl);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                
+                const processedBuffer = removeSilenceFromBuffer(audioBuffer, silenceSec, thresholdVal);
+                const wavBlob = bufferToWav(processedBuffer);
+                
+                const formData = new FormData();
+                formData.append('token', `${system}:${pass}`);
+                const cleanTargetExt = targetExt.startsWith('/') ? targetExt : `/${targetExt}`;
+                const finalPath = `ivr2:${cleanTargetExt}${cleanTargetExt.endsWith('/') ? '' : '/'}`;
+                formData.append('path', finalPath);
+                formData.append('autoNumbering', '1');
+                formData.append('convertAudio', '1');
+                formData.append('qqfile', wavBlob, displayedName);
+
+                const uploadResponse = await fetch('https://www.call2all.co.il/ym/api/UploadFile', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await uploadResponse.json();
+                if (result.responseStatus === 'OK') {
+                    if (targetExt === sourceExt) await fetchData();
+                    else alert(`הקובץ "${displayedName}" הועלה בהצלחה לשלוחה ${targetExt}`);
+                } else {
+                    alert('העלאה נכשלה: ' + (result.message || 'שגיאה לא ידועה'));
+                }
+            } catch (e) { 
+                console.error(e);
+                alert('שגיאה בתהליך העיבוד/העלאה'); 
+            } finally { 
+                document.getElementById('processingOverlay').style.display = 'none'; 
+            }
+        }
+
+        function removeSilenceFromBuffer(buffer, thresholdSec, threshold) {
+            const sampleRate = buffer.sampleRate;
+            const minSilenceSamples = thresholdSec * sampleRate;
+            const channels = [];
+            for (let c = 0; c < buffer.numberOfChannels; c++) channels.push(buffer.getChannelData(c));
+            const length = buffer.length;
+            const keepIndices = [];
+            let silenceCounter = 0;
+            for (let i = 0; i < length; i++) {
+                let isSilence = true;
+                for (let c = 0; c < buffer.numberOfChannels; c++) {
+                    if (Math.abs(channels[c][i]) > threshold) { isSilence = false; break; }
+                }
+                if (isSilence) silenceCounter++;
+                else silenceCounter = 0;
+                if (silenceCounter < minSilenceSamples) keepIndices.push(i);
+            }
+            if (keepIndices.length === 0) return buffer;
+            const newBuffer = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 }).createBuffer(buffer.numberOfChannels, keepIndices.length, 8000);
+            for (let c = 0; c < buffer.numberOfChannels; c++) {
+                const newData = newBuffer.getChannelData(c);
+                for (let i = 0; i < keepIndices.length; i++) newData[i] = channels[c][keepIndices[i]];
+            }
+            return newBuffer;
+        }
+
+        function bufferToWav(buffer) {
+            const numOfChan = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const length = buffer.length * numOfChan * 2 + 44;
+            const bufferArr = new ArrayBuffer(length);
+            const view = new DataView(bufferArr);
+            const channels = [];
+            let pos = 0;
+            function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+            function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
+            setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+            setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+            setUint32(sampleRate); setUint32(sampleRate * 2 * numOfChan);
+            setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
+            for (let i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+            let offset = 0;
+            while (pos < length) {
+                for (let i = 0; i < numOfChan; i++) {
+                    let sample = Math.max(-1, Math.min(1, channels[i][offset]));
+                    sample = (sample < 0 ? sample * 0x8000 : sample * 0x7FFF);
+                    view.setInt16(pos, sample, true); pos += 2;
+                }
+                offset++;
+            }
+            return new Blob([bufferArr], { type: 'audio/wav' });
+        }
+
+        function downloadFile(index) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            const file = currentFiles[index];
+            const url = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
+            const a = document.createElement('a'); a.href = url; a.download = file.name;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        async function bulkDownload() {
+            const sortedIndices = Array.from(selectedFiles).sort((a, b) => a - b);
+            for (const idx of sortedIndices) {
+                downloadFile(idx);
+                await new Promise(r => setTimeout(r, 500));
+            }
+        }
+
+        function bulkSilenceAction() {
+            openSilenceModal(async (silenceVal, thresholdVal, uploadPath) => {
+                const threshold = parseFloat(thresholdVal) / 100;
+                const sortedIndices = Array.from(selectedFiles).sort((a, b) => a - b);
+                for (const idx of sortedIndices) {
+                    if (uploadPath) {
+                        await processAndUploadWithSilence(idx, parseFloat(silenceVal), threshold, uploadPath);
+                    } else {
+                        await processAndDownloadWithSilence(idx, parseFloat(silenceVal), threshold);
+                    }
+                }
+            });
+        }
+
+        // מיזוג קבצים
+        function openMergeModal() {
+            const list = document.getElementById('mergeFilesList');
+            list.innerHTML = "";
+            mergeFilesOrder = Array.from(selectedFiles).sort((a, b) => a - b);
+            
+            document.getElementById('mergeFileNameInput').value = ""; // איפוס שם קובץ
+            renderMergeList();
+            document.getElementById('mergeModalOverlay').style.display = 'flex';
+        }
+
+        function renderMergeList() {
+            const list = document.getElementById('mergeFilesList');
+            list.innerHTML = "";
+            mergeFilesOrder.forEach((idx, i) => {
+                const file = currentFiles[idx];
+                const displayedName = getDisplayedFileName(idx);
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="list-item-drag">
+                        <div class="flex flex-col gap-1">
+                            <button onclick="moveMergeItem(${i}, -1)" class="p-1 hover:bg-slate-200 rounded text-slate-500 ${i === 0 ? 'opacity-20 cursor-not-allowed' : ''}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                            </button>
+                            <button onclick="moveMergeItem(${i}, 1)" class="p-1 hover:bg-slate-200 rounded text-slate-500 ${i === mergeFilesOrder.length - 1 ? 'opacity-20 cursor-not-allowed' : ''}">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        </div>
+                        <span class="text-[10px] font-bold text-slate-700 truncate flex-1 text-right">${displayedName}</span>
+                    </div>
+                `);
+            });
+        }
+
+        function moveMergeItem(index, dir) {
+            const newIndex = index + dir;
+            if (newIndex < 0 || newIndex >= mergeFilesOrder.length) return;
+            const temp = mergeFilesOrder[index];
+            mergeFilesOrder[index] = mergeFilesOrder[newIndex];
+            mergeFilesOrder[newIndex] = temp;
+            renderMergeList();
+        }
+
+        async function processMergeAction(shouldUpload) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            const silenceSec = parseFloat(document.getElementById('mergeSilenceLength').value);
+            const silenceThreshold = parseFloat(document.getElementById('mergeSilenceThreshold').value) / 100;
+            const uploadTarget = document.getElementById('mergeUploadTarget').value.trim();
+            
+            let finalFileName = document.getElementById('mergeFileNameInput').value.trim();
+            if (!finalFileName) finalFileName = "merged_audio";
+            if (!finalFileName.toLowerCase().endsWith('.wav')) finalFileName += ".wav";
+
+            if (shouldUpload && !uploadTarget) {
+                alert('נא להזין שלוחת יעד להעלאה');
+                return;
+            }
+
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = `ממזג ${mergeFilesOrder.length} קבצים...`;
+
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 8000 });
+                let buffers = [];
+
+                for (let idx of mergeFilesOrder) {
+                    const file = currentFiles[idx];
+                    const downloadUrl = `https://www.call2all.co.il/ym/api/DownloadFile?token=${system}:${pass}&path=ivr2:/${ext}/${file.name}`;
+                    const response = await fetch(downloadUrl);
+                    const arrayBuffer = await response.arrayBuffer();
+                    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                    buffers.push(audioBuffer);
+                }
+
+                // חישוב אורך סופי
+                let totalLength = buffers.reduce((acc, b) => acc + b.length, 0);
+                let mergedBuffer = audioCtx.createBuffer(1, totalLength, 8000);
+                let offset = 0;
+                for (let b of buffers) {
+                    mergedBuffer.getChannelData(0).set(b.getChannelData(0), offset);
+                    offset += b.length;
+                }
+
+                // הסרת שקט מהקובץ הממוזג
+                const finalBuffer = removeSilenceFromBuffer(mergedBuffer, silenceSec, silenceThreshold);
+                const wavBlob = bufferToWav(finalBuffer);
+
+                if (shouldUpload) {
+                    document.getElementById('processingText').innerText = `מעלה קובץ ממוזג...`;
+                    const formData = new FormData();
+                    formData.append('token', `${system}:${pass}`);
+                    const cleanTargetExt = uploadTarget.startsWith('/') ? uploadTarget : `/${uploadTarget}`;
+                    formData.append('path', `ivr2:${cleanTargetExt}/`);
+                    formData.append('autoNumbering', '1');
+                    formData.append('convertAudio', '1');
+                    formData.append('qqfile', wavBlob, finalFileName);
+
+                    const uploadRes = await fetch('https://www.call2all.co.il/ym/api/UploadFile', { method: 'POST', body: formData });
+                    const uploadData = await uploadRes.json();
+                    if (uploadData.responseStatus === 'OK') {
+                        alert(`המיזוג והעלאה של "${finalFileName}" הושלמו בהצלחה!`);
+                        closeMergeModal();
+                        if (uploadTarget === ext) await fetchData();
+                    } else {
+                        alert('העלאה נכשלה: ' + (uploadData.message || 'שגיאה'));
+                    }
+                } else {
+                    const downloadUrl = URL.createObjectURL(wavBlob);
+                    const a = document.createElement('a');
+                    a.href = downloadUrl;
+                    a.download = finalFileName;
+                    a.click();
+                    closeMergeModal();
+                }
+            } catch (e) {
+                console.error(e);
+                alert('שגיאה בתהליך המיזוג');
+            } finally {
+                document.getElementById('processingOverlay').style.display = 'none';
+            }
+        }
+
+        function closeMergeModal() { document.getElementById('mergeModalOverlay').style.display = 'none'; }
+
+        async function executeFileAction(action, fileName, target = null) {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            let url = `https://www.call2all.co.il/ym/api/FileAction?token=${system}:${pass}&action=${action}&what=ivr2:/${ext}/${fileName}`;
+            if (target) url += `&target=ivr2:/${target}`;
+            try { 
+                const response = await fetch(url);
+                return await response.json();
+            } catch (e) { return null; }
+        }
+
+        async function bulkAction(action) {
+            if (selectedFiles.size === 0) return;
+            if (action === 'copy' || action === 'move') {
+                openModal(action === 'copy' ? 'העתקה קבוצתית' : 'העברה קבוצתית', async (target) => {
+                    await runBulkSequence(action, target);
+                });
+            } else {
+                await runBulkSequence(action);
+            }
+        }
+
+        async function runBulkSequence(action, target = null) {
+            document.getElementById('processingOverlay').style.display = 'flex';
+            document.getElementById('processingText').innerText = 'מבצע פעולות...';
+            const indices = Array.from(selectedFiles);
+            for (let i = 0; i < indices.length; i++) {
+                const idx = indices[i];
+                const file = currentFiles[idx];
+                document.getElementById('processingText').innerText = `מבצע ${i+1}/${indices.length}: ${file.name}`;
+                await executeFileAction(action, file.name, target);
+                await new Promise(r => setTimeout(r, 200));
+            }
+            selectedFiles.clear();
+            lastSelectedIndex = null; // איפוס בחירה אחרונה
+            updateBulkBar();
+            document.getElementById('processingOverlay').style.display = 'none';
+            await fetchData();
+        }
+
+        async function fetchData() {
+            const system = document.getElementById('systemNumber').value.trim();
+            const pass = document.getElementById('password').value.trim();
+            const ext = document.getElementById('extension').value.trim();
+            const from = document.getElementById('filesFromInput').value || 0;
+            const limit = document.getElementById('filesLimitInput').value || 25;
+            const btn = document.getElementById('mainBtn');
+            const grid = document.getElementById('fileGrid');
+            const subDirsGrid = document.getElementById('subDirsGrid');
+            const noSubDirsMsg = document.getElementById('noSubDirsMsg');
+
+            btn.disabled = true;
+            btn.innerHTML = `<span class="loader"></span>`;
+            await loadContacts();
+            
+            const url = `https://www.call2all.co.il/ym/api/GetIVR2Dir?path=ivr2:/${ext}&token=${system}:${pass}&filesFrom=${from}&filesLimit=${limit}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                if (data.responseStatus === "OK") {
+                    document.getElementById('resultsWrapper').classList.remove('hidden');
+                    grid.innerHTML = "";
+                    selectedFiles.clear();
+                    lastSelectedIndex = null; // איפוס מעקב Shift בכל טעינה מחדש
+                    updateBulkBar();
+                    subDirsGrid.innerHTML = "";
+                    
+                    if (data.dirs && data.dirs.length > 0) {
+                        noSubDirsMsg.classList.add('hidden');
+                        data.dirs.forEach(dir => {
+                            const translatedType = (typeof extensionTypeTranslations !== 'undefined') ? (extensionTypeTranslations[dir.extType] || dir.extType || "תיקייה") : (dir.extType || "תיקייה");
+                            const isNumericName = /^\d+$/.test(dir.name);
+                            const nameStyle = isNumericName ? 'text-[36px] font-extrabold' : 'text-[9px] font-extrabold';
+                            const safeTitle = dir.extTitle || "";
+                            subDirsGrid.insertAdjacentHTML('beforeend', `
+                                <div onclick="navigateToDir('${dir.path}')" class="dir-card">
+                                    <span class="${nameStyle} text-blue-600">${dir.name}</span>
+                                    <span class="text-[10px] font-bold text-slate-800 line-clamp-1 px-1">${safeTitle}</span>
+                                    <span class="text-[8px] text-slate-400 font-bold">${translatedType}</span>
+                                </div>
+                            `);
+                        });
+                    } else {
+                        noSubDirsMsg.classList.remove('hidden');
+                    }
+
+                    if (data.extIni) {
+                        document.getElementById('extTitle').innerText = data.extIni.title || "";
+                        const typeLabel = (typeof extensionTypeTranslations !== 'undefined') ? (extensionTypeTranslations[data.extIni.type] || data.extIni.type || "כללי") : (data.extIni.type || "כללי");
+                        document.getElementById('extType').innerText = typeLabel;
+                    }
+
+                    let rawFiles = data.files || [];
+                    
+                    if (data.ini && Array.isArray(data.ini)) {
+                        data.ini.forEach(iniFile => {
+                            if (!rawFiles.some(f => f.name === iniFile.name)) {
+                                rawFiles.push(iniFile);
+                            }
+                        });
+                    }
+                    
+                    currentFiles = rawFiles.sort((a, b) => {
+                        const isSpecialA = a.name.toLowerCase().endsWith('.ini') || a.name.toLowerCase().endsWith('.ymgr');
+                        const isSpecialB = b.name.toLowerCase().endsWith('.ini') || b.name.toLowerCase().endsWith('.ymgr');
+                        if (isSpecialA && !isSpecialB) return 1;
+                        if (!isSpecialA && isSpecialB) return -1;
+                        return 0;
+                    });
+
+                    document.getElementById('fileCount').innerText = `סה"כ ${currentFiles.length}`;
+                    document.getElementById('rangeLabel').innerText = `מ ${parseInt(from) + 1} עד ${parseInt(from) + currentFiles.length}`;
+
+                    currentFiles.forEach((file, i) => {
+                        const isIni = file.name.toLowerCase().endsWith('.ini');
+                        const isYmgr = file.name.toLowerCase().endsWith('.ymgr');
+                        const isSpecial = isIni || isYmgr;
+                        
+                        const num = file.name.replace(/\.[^/.]+$/, "");
+                        const cleanP = file.phone ? file.phone.replace(/[^0-9]/g, '') : "";
+                        
+                        let title = isSpecial ? file.name : (contactsMap.get(cleanP) || (file.meta?.title ? file.meta.title.replace(/\.[^/.]+$/, "") : num));
+
+                        let iconSvg = isIni ? `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        ` : isYmgr ? `
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                        ` : `<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>`;
+
+                        let centerIcon = `<div class="play-btn ${isSpecial ? 'is-file' : ''}" onclick="playFile(event, ${i})">${iconSvg}</div>`;
+
+                        let dropdownItems = `
+                            <div class="dropdown-item" onclick="singleAction(event, 'download', ${i})">הורדה</div>
+                            ${!isSpecial ? `<div class="dropdown-item" onclick="singleAction(event, 'removeSilence', ${i})">הסרת רווח</div>` : ''}
+                            <div class="dropdown-item" onclick="singleAction(event, 'copy', ${i})">העתקה</div>
+                            <div class="dropdown-item" onclick="singleAction(event, 'move', ${i})">העברה</div>
+                            <div class="dropdown-item text-red-600 font-bold" onclick="singleAction(event, 'delete', ${i})">מחיקה</div>
+                        `;
+
+                        grid.insertAdjacentHTML('beforeend', `
+                            <div id="card-${i}" class="file-card shadow-sm" onclick="toggleFile(${i}, event)">
+                                ${!isSpecial ? `<div class="file-badge">${num}</div>` : ''}
+                                <button class="options-btn" onclick="toggleDropdown(event, ${i})">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                </button>
+                                <div id="dropdown-${i}" class="dropdown-menu">${dropdownItems}</div>
+                                <div class="mt-6 mb-2 flex items-center justify-center">${centerIcon}</div>
+                                <h4 class="font-bold text-slate-800 text-[10px] line-clamp-2 px-1 mb-1">${title}</h4>
+                                <div class="mt-auto bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-[8px] space-y-0.5 font-bold">
+                                    <div class="flex justify-between"><span>טל:</span><span>${file.phone || "-"}</span></div>
+                                    <div class="flex justify-between border-t pt-0.5 text-blue-600"><span>אורך:</span><span>${file.durationStr || "-"}</span></div>
+                                </div>
+                            </div>
+                        `);
+                    });
+                }
+            } catch (e) {} finally { btn.disabled = false; btn.innerText = "טען שלוחה"; }
+        }
+
+        function navigateToDir(path) {
+            const cleanPath = path.replace('ivr2:/', '');
+            document.getElementById('extension').value = cleanPath;
+            document.getElementById('filesFromInput').value = 0;
+            closeSubDirsModal();
+            fetchData();
+        }
+
+        function goUpOneLevel() {
+            let currentPath = document.getElementById('extension').value.trim();
+            if (currentPath.endsWith('/')) currentPath = currentPath.slice(0, -1);
+            const parts = currentPath.split('/');
+            if (parts.length > 1) {
+                parts.pop();
+                document.getElementById('extension').value = parts.join('/');
+                document.getElementById('filesFromInput').value = 0;
+                closeSubDirsModal();
+                fetchData();
+            } else if (currentPath !== "") {
+                document.getElementById('extension').value = "";
+                document.getElementById('filesFromInput').value = 0;
+                closeSubDirsModal();
+                fetchData();
+            }
+        }
+
+        function changePage(dir) {
+            const limit = parseInt(document.getElementById('filesLimitInput').value);
+            let next = (parseInt(document.getElementById('filesFromInput').value) || 0) + (dir * limit);
+            document.getElementById('filesFromInput').value = Math.max(0, next);
+            fetchData();
+        }
+
+        function openModal(title, callback) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalOverlay').style.display = 'flex';
+            document.getElementById('modalConfirmBtn').onclick = () => {
+                const t = document.getElementById('targetExtensionInput').value.trim();
+                if (t) { callback(t); closeModal(); }
+            };
+        }
+        function closeModal() { document.getElementById('modalOverlay').style.display = 'none'; }
+        function openSubDirsModal() { document.getElementById('subDirsModalOverlay').style.display = 'flex'; }
+        function closeSubDirsModal() { document.getElementById('subDirsModalOverlay').style.display = 'none'; }
+        function openSilenceModal(callback) {
+            const modal = document.getElementById('silenceModalOverlay');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+            document.getElementById('silenceConfirmBtn').onclick = () => {
+                const len = document.getElementById('silenceLengthInput').value.trim();
+                const thr = document.getElementById('silenceThresholdInput').value.trim();
+                if (len && thr) { callback(len, thr, null); closeSilenceModal(); }
+            };
+            document.getElementById('silenceUploadBtn').onclick = () => {
+                const len = document.getElementById('silenceLengthInput').value.trim();
+                const thr = document.getElementById('silenceThresholdInput').value.trim();
+                const target = document.getElementById('uploadTargetInput').value.trim();
+                if (len && thr && target) { callback(len, thr, target); closeSilenceModal(); }
+                else if (!target) alert('נא להזין שלוחת יעד');
+            };
+        }
+        function closeSilenceModal() {
+            const modal = document.getElementById('silenceModalOverlay');
+            modal.classList.add('hidden'); modal.classList.remove('flex');
+        }
+
+        // פונקציית העזר להצגת הודעת טוסט (Toast)
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = msg;
+            toast.className = "fixed bottom-5 left-5 bg-gray-900 text-white px-5 py-3 rounded-xl text-sm shadow-2xl flex items-center gap-2 transform translate-y-0 opacity-100 transition-all duration-300 z-[150] pointer-events-none border border-gray-800";
+            setTimeout(() => {
+                toast.className = "fixed bottom-5 left-5 bg-gray-900 text-white px-5 py-3 rounded-xl text-sm shadow-2xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 z-[150] pointer-events-none border border-gray-800";
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
